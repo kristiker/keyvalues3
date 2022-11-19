@@ -27,17 +27,21 @@ def check_valid(value: kv3_types):
         case None | bool() | float() | enum.Enum() | str() | str_multiline():
             pass
         case int():
-            if value > 2**64 - 1: raise OverflowError("Int value is bigger than biggest UInt64.")
-            elif value < -2**63: raise OverflowError("Int value is smaller than smallest Int64.")
+            if value > 2**64 - 1: raise OverflowError("int value is bigger than biggest UInt64")
+            elif value < -2**63: raise OverflowError("int value is smaller than smallest Int64")
         case list():
             for nested_value in value:
+                if nested_value is value:
+                    raise ValueError("list contains itself")
                 check_valid(nested_value)
         case dict():
             for key, nested_value in value.items():
+                if nested_value is value:
+                    raise ValueError("dict contains itself")
                 if not isinstance(key, str):
-                    raise ValueError("Dict key is not a string.")
+                    raise ValueError("dict key is not a string")
                 if not key.isidentifier():
-                    raise ValueError("Dict key is not a valid identifier.") # I think.
+                    raise ValueError("dict key is not a valid identifier") # I think
                 check_valid(nested_value)
         case flagged_value(actual_value, _):
             return check_valid(actual_value)
@@ -210,6 +214,19 @@ if __name__ == '__main__':
             self.assertFalse(is_valid([set(), set(), set()]))
             self.assertFalse(is_valid(KV3File))
             self.assertFalse(is_valid(KV3File()))
+
+        def test_self_ref_list_value_throws(self):
+            l = []
+            l.append(l)
+            with self.assertRaises(ValueError):
+                check_valid(l)
+            
+        def test_self_ref_dict_value_throws(self):
+            d = {}
+            d['dub'] = d
+            with self.assertRaises(ValueError):
+                check_valid(d)
+        
 
 
     unittest.main()
