@@ -1,9 +1,7 @@
 import dataclasses
-from pathlib import Path
-from types import NoneType
-from typing import Iterable, Protocol, Sequence, overload, runtime_checkable
-from uuid import UUID
 import enum
+from typing import Protocol, runtime_checkable
+from uuid import UUID
 
 @dataclasses.dataclass(frozen=True)
 class Encoding:
@@ -40,13 +38,13 @@ class KV3Header:
 class str_multiline(str):
     pass
 
-simple_types = None | bool | int | float | enum.Enum | str | str_multiline
+simple_types = None | bool | int | float | enum.IntEnum | str | str_multiline
 container_types = list[simple_types] | dict[str, simple_types]
 kv3_types = simple_types | container_types
 
 def check_valid(value: kv3_types):
     match value:
-        case None | bool() | float() | enum.Enum() | str() | str_multiline():
+        case None | bool() | float() | enum.IntEnum() | str() | str_multiline():
             pass
         case int():
             if value > 2**64 - 1: raise OverflowError("int value is bigger than biggest UInt64")
@@ -77,8 +75,8 @@ def is_valid(value: kv3_types) -> bool:
     except (ValueError, OverflowError, TypeError):
         return False
 
-def resource(path: Path) -> str:
-    return flagged_value(path.as_posix().lower(), flag.resource)
+#def resource(path: Path) -> str:
+#    return flag.resource(path.as_posix().lower())
 
 @enum.global_enum
 class flag(enum.Flag):
@@ -89,32 +87,40 @@ class flag(enum.Flag):
     subclass = enum.auto()
     def __str__(self):
         return "+".join(val.name for val in self.__class__ if self.value & val)
+    def __call__(self, value: kv3_types):
+        return flagged_value(value, self)
 
 @dataclasses.dataclass(slots=True)
 class flagged_value:
     value: kv3_types
     flags: flag = flag(0)
-    #def __str__(self):
-    #    if not self.flags:
-    #        return str(self.value)
-    #    return f"{self.flags}:{self.value}"
 
 kv3_types = kv3_types | flagged_value
 
 @runtime_checkable
 class Dataclass(Protocol):
-    # checking for this attribute is currently
-    # the most reliable way to ascertain that something is a dataclass
     __dataclass_fields__: dict[str, dataclasses.Field]
 
 class KV3File:
-    def __init__(self, value: kv3_types | Dataclass = None, validate_value: bool = False):
-        self.header = KV3Header()
+    def __init__(self,
+            value: kv3_types | Dataclass = None,
+            format: Format = generic_format,
+            validate_value: bool = False,
+            print_enums_as_ints: bool = False,
+            ):
+        
+        self.header = KV3Header(format=format)
+        
         match value:
             case Dataclass():
                 self.value = dataclasses.asdict(value)
             case _:
                 self.value = value
+        
+        if validate_value:
+            check_valid(self.value)
+
+        self.print_enums_as_ints = print_enums_as_ints
 
     def __str__(self):
         kv3 = str(self.header) + '\n'
@@ -132,6 +138,10 @@ class KV3File:
                     return 'false'
                 case True:
                     return 'true'
+                case enum.IntEnum():
+                    if self.print_enums_as_ints:
+                        return str(obj.value)
+                    return obj.name
                 case str():
                     return '"' + obj + '"'
                 case str_multiline():
@@ -150,15 +160,13 @@ class KV3File:
                     if dictKey:
                         s = '\n' + s
                     for key, value in obj.items():
-                        #if value == [] or value == "" or value == {}: continue
                         if not isinstance(key, str):
                             key = f'"{key}"'
                         s +=  ind + f"{key} = {obj_serialize(value, indent+1, dictKey=True)}\n"
                     return s + preind + '}'
-                case _: # int, float, resource
-                    # round off inaccurate dmx floats
-                    if type(obj) == float:
-                        obj = round(obj, 6)
+                case float():
+                    return str(round(obj, 6))
+                case _:
                     return str(obj)
 
         kv3 += obj_serialize(self.value)
