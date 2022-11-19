@@ -1,6 +1,7 @@
 import dataclasses
 from pathlib import Path
-from typing import Iterable, Protocol, Sequence, overload
+from types import NoneType
+from typing import Iterable, Protocol, Sequence, overload, runtime_checkable
 from uuid import UUID
 import enum
 
@@ -19,7 +20,36 @@ class str_multiline(str):
 
 simple_types = None | bool | int | float | enum.Enum | str | str_multiline
 container_types = list[simple_types] | dict[str, simple_types]
-value_types = simple_types | container_types
+kv3_types = simple_types | container_types
+
+def check_valid(value: kv3_types):
+    match value:
+        case None | bool() | float() | enum.Enum() | str() | str_multiline():
+            pass
+        case int():
+            if value > 2**64 - 1: raise OverflowError("Int value is bigger than biggest UInt64.")
+            elif value < -2**63: raise OverflowError("Int value is smaller than smallest Int64.")
+        case list():
+            for nested_value in value:
+                check_valid(nested_value)
+        case dict():
+            for key, nested_value in value.items():
+                if not isinstance(key, str):
+                    raise ValueError("Dict key is not a string.")
+                if not key.isidentifier():
+                    raise ValueError("Dict key is not a valid identifier.") # I think.
+                check_valid(nested_value)
+        case flagged_value(actual_value, _):
+            return check_valid(actual_value)
+        case _:
+            raise TypeError("Invalid type for KV3 value.")
+
+def is_valid(value: kv3_types) -> bool:
+    try:
+        check_valid(value)
+        return True
+    except (ValueError, OverflowError, TypeError):
+        return False
 
 def resource(path: Path) -> str:
     return flagged_value(path.as_posix().lower(), flag.resource)
@@ -36,27 +66,29 @@ class flag(enum.Flag):
 
 @dataclasses.dataclass(slots=True)
 class flagged_value:
-    value: value_types
+    value: kv3_types
     flags: flag = flag(0)
     #def __str__(self):
     #    if not self.flags:
     #        return str(self.value)
     #    return f"{self.flags}:{self.value}"
 
-value_types = value_types | flagged_value
+kv3_types = kv3_types | flagged_value
 
+@runtime_checkable
 class Dataclass(Protocol):
     # checking for this attribute is currently
     # the most reliable way to ascertain that something is a dataclass
     __dataclass_fields__: dict[str, dataclasses.Field]
 
 class KV3File:
-    def __init__(self, value: value_types | Dataclass = None):
+    def __init__(self, value: kv3_types | Dataclass = None, validate_value: bool = False):
         self.header = KV3Header()
-        if dataclasses.is_dataclass(value):
-            self.value = dataclasses.asdict(value)
-        else:
-            self.value = value
+        match value:
+            case Dataclass():
+                self.value = dataclasses.asdict(value)
+            case _:
+                self.value = value
 
     def __str__(self):
         kv3 = str(self.header) + '\n'
@@ -152,5 +184,32 @@ if __name__ == '__main__':
                     '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}'+\
                     '\n\tc = ["listed_text1", "listed_text2"]\n}'
             )
+        
+        def test_kv3_value_validity(self):
+            with self.assertRaises(TypeError):  check_valid(value=tuple(5, 6, 7))
+            with self.assertRaises(TypeError):  check_valid(value=flagged_value(set(), flag(1)))
+            with self.assertRaises(ValueError): check_valid(value={"key with space": 5})
+            self.assertTrue(is_valid(value=None))
+            self.assertTrue(is_valid(value=True))
+            self.assertTrue(is_valid(value=False))
+            self.assertTrue(is_valid(value=1))
+            self.assertTrue(is_valid(value=1.0))
+            self.assertTrue(is_valid(value=str()))
+            self.assertTrue(is_valid(value=str_multiline()))
+            self.assertTrue(is_valid([]))
+            self.assertTrue(is_valid({}))
+            class MyKV3IntEnum(enum.IntEnum):
+                WATER = 0
+                FIRE = 1
+            self.assertTrue(is_valid(MyKV3IntEnum.FIRE))
+
+            #self.assertFalse(is_valid(float('inf')))
+            self.assertFalse(is_valid(2**64))
+            self.assertFalse(is_valid(-1 + -2**63))
+            self.assertFalse(is_valid({"key with space": 5}))
+            self.assertFalse(is_valid([set(), set(), set()]))
+            self.assertFalse(is_valid(KV3File))
+            self.assertFalse(is_valid(KV3File()))
+
 
     unittest.main()
