@@ -50,30 +50,13 @@ class Dataclass(Protocol):
     # the most reliable way to ascertain that something is a dataclass
     __dataclass_fields__: dict[str, dataclasses.Field]
 
-class KV3File(dict):
-    @overload
-    def __init__(self):
-        """Create an empty dict-based KV3File""" # TODO: null?
-        ...
-    @overload
-    def __init__(self, **keywordargs):
-        """Create a dict-based KV3File from keyword arguments"""
-        ...
-    @overload
-    def __init__(self, kv3_dataclass: Dataclass):
-        """Create a dict-based KV3File from a dataclass"""
-        ...
-    @overload
-    def __init__(self, keyvaluepairs: Iterable[tuple[str, value_types]]):
-        """Create a dict-based KV3File from a list of key-value pairs"""
-        ...
-
-    def __init__(self, *args, **kwargs):
-        if len(args) and dataclasses.is_dataclass(args[0]):
-            super().__init__(dataclasses.asdict(args[0]))
-        else:
-            super().__init__(*args, **kwargs)
+class KV3File:
+    def __init__(self, value: value_types | Dataclass = None):
         self.header = KV3Header()
+        if dataclasses.is_dataclass(value):
+            self.value = dataclasses.asdict(value)
+        else:
+            self.value = value
 
     def __str__(self):
         kv3 = str(self.header) + '\n'
@@ -120,7 +103,7 @@ class KV3File(dict):
                         obj = round(obj, 6)
                     return str(obj)
 
-        kv3 += obj_serialize(self)
+        kv3 += obj_serialize(self.value)
 
         return kv3
 
@@ -142,21 +125,7 @@ if __name__ == '__main__':
         def test_empty_instantiated_kv3file(self):
             self.assertEqual(
                 KV3File().ToString(),
-                self.default_header + "\n{\n}"
-            )
-
-        def test_kwargs_instantiated_kv3file(self):
-            expect_text = self.default_header + '\n{'+\
-                '\n\ta = "asd asd"'+\
-                '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}'+\
-                '\n\tc = ["listed_text1", "listed_text2"]\n}'
-            self.assertEqual(
-                KV3File(
-                    a='asd asd',
-                    b={"inner_b":3},
-                    c=["listed_text1", "listed_text2"]
-                ).ToString(),
-                expect_text
+                self.default_header + "\nnull"
             )
 
         def test_dataclass_instantiated_kv3file(self):
@@ -182,14 +151,6 @@ if __name__ == '__main__':
                     '\n\ta = "asd asd"'+\
                     '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}'+\
                     '\n\tc = ["listed_text1", "listed_text2"]\n}'
-            )
-        
-        def test_keyvaluepairs_kv3file(self):
-            self.assertEqual(
-                KV3File([('a', 'asd asd'), ('b', {'inner_b':3})]).ToString(),
-                self.default_header + '\n{'+\
-                    '\n\ta = "asd asd"'+\
-                    '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}\n}'
             )
 
     unittest.main()
