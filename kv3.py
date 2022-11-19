@@ -1,7 +1,7 @@
 import dataclasses
 import enum
 from typing import Protocol, runtime_checkable
-from uuid import UUID
+from uuid import UUID, uuid4
 
 @dataclasses.dataclass(frozen=True)
 class _HeaderPiece:
@@ -119,56 +119,53 @@ class KV3File:
 
     def __str__(self):
         kv3 = str(self.header)
-        def obj_serialize(obj, indent = 1, dictObj = False):
-            preind = ('\t' * (indent-1))
-            ind = ('\t' * indent)
-            match obj:
+        def object_serialize(object, indentation_level = 0, dictionary_object = False):
+            indent = ("\t" * (indentation_level))
+            indent_nested = ("\t" * (indentation_level + 1))
+            match object:
                 case flagged_value(value, flags):
                     if flags:
-                        return f"{flags}:{obj_serialize(value)}"
-                    return obj_serialize(value)
+                        return f"{flags}:{object_serialize(value)}"
+                    return object_serialize(value)
                 case None:
-                    return 'null'
+                    return "null"
                 case False:
-                    return 'false'
+                    return "false"
                 case True:
-                    return 'true'
+                    return "true"
                 case int():
-                    return str(obj)
+                    return str(object)
                 case float():
-                    return str(round(obj, 6))
+                    return str(round(object, 6))
                 case enum.IntEnum():
                     if self.serialize_enums_as_ints:
-                        return str(obj.value)
-                    return obj.name
+                        return str(object.value)
+                    return object.name
                 case str():
-                    return '"' + obj + '"'
+                    return '"' + object + '"'
                 case str_multiline():
-                    return '"""' + obj + '"""'
+                    return '"""' + object + '"""'
                 case list():
-                    s = '['
-                    if any(isinstance(item, dict) for item in obj):  # TODO: only non numbers
-                        s = f'\n{preind}[\n'
-                        for item in obj:
-                            s += (obj_serialize(item, indent+1) + ',\n')
-                        return s + preind + ']\n'
-
-                    return f'[{", ".join((obj_serialize(item, indent+1) for item in obj))}]'
+                    qualifies_for_sameline = len(object) <= 4 and all(isinstance(item, (dict)) == False for item in object)
+                    if qualifies_for_sameline:
+                        return "[" + ", ".join(object_serialize(item) for item in object) + "]"
+                    s = f"\n{indent}[\n"
+                    for item in object:
+                        s += (object_serialize(item, indentation_level+1) + ",\n")
+                    return s + indent + "]\n"
                 case dict():
-                    s = preind + '{\n'
-                    if dictObj:
-                        s = '\n' + s
-                    for key, value in obj.items():
-                        if not isinstance(key, str):
-                            key = f'"{key}"'
-                        s +=  ind + f"{key} = {obj_serialize(value, indent+1, dictObj=True)}\n"
-                    return s + preind + '}'
+                    s = indent + "{\n"
+                    if dictionary_object:
+                        s = "\n" + s
+                    for key, value in object.items():
+                        s += indent_nested + f"{key} = {object_serialize(value, indentation_level+1, dictionary_object=True)}\n"
+                    return s + indent + "}"
                 case bytes() | bytearray():
-                    return f"#[{' '.join(f'{b:02x}' for b in obj)}]"
+                    return f"#[{' '.join(f'{b:02x}' for b in object)}]"
                 case _:
                     raise TypeError("Invalid type for KV3 value.")
 
-        kv3 += obj_serialize(self.value)
+        kv3 += object_serialize(self.value)
 
         return kv3
 
@@ -246,9 +243,15 @@ if __name__ == '__main__':
             )
 
     class Test_KV3Value(unittest.TestCase):
-        class MyKV3IntEnum(enum.IntEnum):
-            WATER = 0
-            FIRE = 1
+        
+        @dataclasses.dataclass
+        class MyKV3Format:
+            format = Format('mycustomformat', uuid4())
+            class Substance(enum.IntEnum):
+                WATER = 0
+                FIRE = 1
+            substance: Substance = Substance.WATER
+
         def test_kv3_value_validity(self):
             with self.assertRaises(TypeError):  check_valid(value=tuple(5, 6, 7))
             with self.assertRaises(TypeError):  check_valid(value=flagged_value(set(), Flag(1)))
@@ -258,7 +261,7 @@ if __name__ == '__main__':
             self.assertTrue(is_valid(value=False))
             self.assertTrue(is_valid(value=1))
             self.assertTrue(is_valid(value=1.0))
-            self.assertTrue(is_valid(value=self.MyKV3IntEnum.FIRE))
+            self.assertTrue(is_valid(value=self.MyKV3Format.Substance.FIRE))
             self.assertTrue(is_valid(value=str()))
             self.assertTrue(is_valid(value=str_multiline()))
             self.assertTrue(is_valid(value=[]))
@@ -274,13 +277,13 @@ if __name__ == '__main__':
             self.assertFalse(is_valid(KV3File))
             self.assertFalse(is_valid(KV3File()))
 
-        def test_self_ref_list_value_throws(self):
+        def test_self_referencing_list_throws(self):
             l = []
             l.append(l)
             with self.assertRaises(ValueError):
                 check_valid(l)
 
-        def test_self_ref_dict_value_throws(self):
+        def test_self_referencing_dict_throws(self):
             d = {}
             d['dub'] = d
             with self.assertRaises(ValueError):
@@ -292,11 +295,12 @@ if __name__ == '__main__':
             KV3File(value=False).ToString()
             KV3File(value=1).ToString()
             KV3File(value=1.0).ToString()
-            KV3File(value=self.MyKV3IntEnum.FIRE).ToString()
+            KV3File(value=self.MyKV3Format.Substance.FIRE).ToString()
             KV3File(value=str()).ToString()
             KV3File(value=str_multiline()).ToString()
             KV3File(value=[]).ToString()
             KV3File(value={}).ToString()
+            KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format).ToString()
             KV3File(value=bytes(byte for byte in range(256))).ToString()
             KV3File(value=bytearray(byte for byte in range(256))).ToString()
 
