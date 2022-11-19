@@ -28,7 +28,7 @@ class KV3Header:
     encoding: Encoding = text
     format: Format = generic
     def __str__(self):
-        return f"<!-- kv3 {self.encoding} {self.format} -->"
+        return f"<!-- kv3 {self.encoding} {self.format} -->\n"
 
 class str_multiline(str):
     pass
@@ -118,7 +118,7 @@ class KV3File:
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
     def __str__(self):
-        kv3 = str(self.header) + '\n'
+        kv3 = str(self.header)
         def obj_serialize(obj, indent = 1, dictObj = False):
             preind = ('\t' * (indent-1))
             ind = ('\t' * indent)
@@ -180,14 +180,14 @@ class KV3File:
 if __name__ == '__main__':
     import unittest
     class Test_KV3File(unittest.TestCase):
-        default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
+        default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n'
         def test_default_header(self):
             self.assertEqual(str(KV3Header()), self.default_header)
 
         def test_custom_header(self):
             self.assertEqual(
                 str(KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))),
-                '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
+                '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->\n'
             )
             
             with self.assertRaises(ValueError): Format('vpcf', "v2")
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         def test_empty_instantiated_kv3file(self):
             self.assertEqual(
                 KV3File().ToString(),
-                self.default_header + "\nnull"
+                self.default_header + "null"
             )
 
         def test_dataclass_instantiated_kv3file(self):
@@ -204,24 +204,45 @@ if __name__ == '__main__':
             class MyKV3Format:
                 a: str = 'asd asd'
                 b: dict = dataclasses.field(default_factory=lambda: {"inner_b":3})
+                c: list = dataclasses.field(default_factory=lambda: ["listed_text1", "listed_text2"])
             self.assertEqual(
                 KV3File(MyKV3Format()).ToString(),
-                self.default_header + '\n{'+\
-                    '\n\ta = "asd asd"'+\
-                    '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}\n}'
+                self.default_header + """
+                {
+                    a = "asd asd"
+                    b = 
+                    {
+                        inner_b = 3
+                    }
+                    c = ["listed_text1", "listed_text2"]
+                }
+                """.strip() # undo detached triple quotes
+                .replace(" "*4, "\t") # convert to tabs
+                .replace("\t"*4, "") # remove added indent
             )
         
         def test_dict_instantiated_kv3file(self):
             self.assertEqual(
                 KV3File({
                     'a': 'asd asd',
-                    'b': {"inner_b":3},
+                    'b': {
+                        "inner_b": 3
+                    },
                     'c': ["listed_text1", "listed_text2"]
-                }).ToString(),
-                self.default_header + '\n{'+\
-                    '\n\ta = "asd asd"'+\
-                    '\n\tb = \n\t{\n\t\tinner_b = 3\n\t}'+\
-                    '\n\tc = ["listed_text1", "listed_text2"]\n}'
+                }
+                ).ToString(),
+                self.default_header + """
+                {
+                    a = "asd asd"
+                    b = 
+                    {
+                        inner_b = 3
+                    }
+                    c = ["listed_text1", "listed_text2"]
+                }
+                """.strip() # undo detached triple quotes
+                .replace(" "*4, "\t") # convert to tabs
+                .replace("\t"*4, "") # remove added indent
             )
         
     class Test_KV3Value(unittest.TestCase):
