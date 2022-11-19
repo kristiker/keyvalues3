@@ -170,14 +170,14 @@ class KV3File:
 
 if __name__ == '__main__':
     import unittest
-    class Test_KV3(unittest.TestCase):
+    class Test_KV3File(unittest.TestCase):
         default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
         def test_default_header(self):
             self.assertEqual(str(KV3Header()), self.default_header)
 
         def test_custom_header(self):
-            header = KV3Header('text2', '123-123', 'generic2', '234-234')
-            headertext = '<!-- kv3 encoding:text2:version{123-123} format:generic2:version{234-234} -->'
+            header = KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))
+            headertext = '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
             self.assertEqual(str(header), headertext)
         
         def test_empty_instantiated_kv3file(self):
@@ -211,6 +211,7 @@ if __name__ == '__main__':
                     '\n\tc = ["listed_text1", "listed_text2"]\n}'
             )
         
+    class Test_KV3Value(unittest.TestCase):
         def test_kv3_value_validity(self):
             with self.assertRaises(TypeError):  check_valid(value=tuple(5, 6, 7))
             with self.assertRaises(TypeError):  check_valid(value=flagged_value(set(), flag(1)))
@@ -249,6 +250,4 @@ if __name__ == '__main__':
             with self.assertRaises(ValueError):
                 check_valid(d)
         
-
-
     unittest.main()
