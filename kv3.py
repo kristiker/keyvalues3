@@ -1,5 +1,5 @@
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from uuid import UUID
 import enum
 
@@ -42,12 +42,16 @@ class flagged_value:
     #        return str(self.value)
     #    return f"{self.flags}:{self.value}"
 
-value_types = value_types | flagged_value[value_types, flag]
+value_types = value_types | flagged_value
 
 class KV3File(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.header = KV3Header(format="source1imported")
+        if len(args) and is_dataclass(args[0]):
+            super().__init__(asdict(args[0]))
+        else:
+            super().__init__(*args, **kwargs)
+        self.header = KV3Header()
 
     def __str__(self):
         kv3 = str(self.header) + '\n'
@@ -105,7 +109,6 @@ if __name__ == '__main__':
     import unittest
     class Test_KV3(unittest.TestCase):
         default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
-        default_s1import_context_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:source1imported:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
         def test_default_header(self):
             self.assertEqual(str(KV3Header()), self.default_header)
 
@@ -114,15 +117,15 @@ if __name__ == '__main__':
             headertext = '<!-- kv3 encoding:text2:version{123-123} format:generic2:version{234-234} -->'
             self.assertEqual(str(header), headertext)
 
-        def test_kv(self):
-            expect_text = f'{self.default_s1import_context_header}\n{{'+\
+        def test_kv3file_dict(self):
+            expect_text = f'{self.default_header}\n{{'+\
                 '\n\ta = "asd asd"'+\
-                '\n\tb = \n\t{\n\t\t"(2,)" = 3\n\t}'+\
+                '\n\tb = \n\t{\n\t\t"2" = 3\n\t}'+\
                 '\n\tc = ["listed_text1", "listed_text2"]\n}'
             self.assertEqual(
                 KV3File(
                     a='asd asd',
-                    b={(2,):3},
+                    b={2:3},
                     c=["listed_text1", "listed_text2"]
                 ).ToString(),
                 expect_text
