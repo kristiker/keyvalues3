@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-from typing import Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 @dataclasses.dataclass(frozen=True)
@@ -103,15 +103,15 @@ class KV3File:
             validate_value: bool = False,
             serialize_enums_as_ints: bool = False,
             ):
-        
+
         self.header = KV3Header(format=format)
-        
+
         match value:
             case Dataclass():
                 self.value = dataclasses.asdict(value)
             case _:
                 self.value = value
-        
+
         if validate_value:
             check_valid(self.value)
 
@@ -173,7 +173,7 @@ class KV3File:
         return kv3
 
     def ToString(self): return self.__str__()
-    
+
     def __bytes__(self):
         ...
 
@@ -189,10 +189,10 @@ if __name__ == '__main__':
                 str(KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))),
                 '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->\n'
             )
-            
+
             with self.assertRaises(ValueError): Format('vpcf', "v2")
             with self.assertRaises(ValueError): Format('vpcf1 with spaces', UUID(int = 0))
-        
+
         def test_empty_instantiated_kv3file(self):
             self.assertEqual(
                 KV3File().ToString(),
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                 .replace(" "*4, "\t") # convert to tabs
                 .replace("\t"*4, "") # remove added indent
             )
-        
+
         def test_dict_instantiated_kv3file(self):
             self.assertEqual(
                 KV3File({
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                 .replace(" "*4, "\t") # convert to tabs
                 .replace("\t"*4, "") # remove added indent
             )
-        
+
     class Test_KV3Value(unittest.TestCase):
         class MyKV3IntEnum(enum.IntEnum):
             WATER = 0
@@ -279,13 +279,13 @@ if __name__ == '__main__':
             l.append(l)
             with self.assertRaises(ValueError):
                 check_valid(l)
-            
+
         def test_self_ref_dict_value_throws(self):
             d = {}
             d['dub'] = d
             with self.assertRaises(ValueError):
                 check_valid(d)
-        
+
         def test_value_serializes(self):
             KV3File(value=None).ToString()
             KV3File(value=True).ToString()
@@ -299,5 +299,5 @@ if __name__ == '__main__':
             KV3File(value={}).ToString()
             KV3File(value=bytes(byte for byte in range(256))).ToString()
             KV3File(value=bytearray(byte for byte in range(256))).ToString()
-    
+
     unittest.main()
