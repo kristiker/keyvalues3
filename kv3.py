@@ -6,14 +6,36 @@ from uuid import UUID
 import enum
 
 @dataclasses.dataclass(frozen=True)
-class KV3Header:
-    encoding: str = 'text'
-    encoding_ver: str = 'e21c7f3c-8a33-41c5-9977-a76d3a32aa0d'
-    format: str = 'generic'
-    format_ver: str = '7412167c-06e9-4698-aff2-e63eb59037e7'
-    _common = '<!-- kv3 encoding:%s:version{%s} format:%s:version{%s} -->'
+class Encoding:
+    name: str
+    version: UUID
+    def __post_init__(self):
+        if not self.name.isidentifier():
+            raise ValueError(f"{self.name!r} is not a valid identifier")
+        if not isinstance(self.version, UUID):
+            self.version = UUID(hex=self.version)
     def __str__(self):
-        return self._common % (self.encoding, self.encoding_ver, self.format, self.format_ver)
+        return "encoding:%s:version{%s}" % (self.name, str(self.version))
+
+@dataclasses.dataclass(frozen=True)
+class Format:
+    name: str
+    version: UUID
+    def __post_init__(self):
+        if not self.name.isidentifier():
+            raise ValueError(f"{self.name!r} is not a valid identifier")
+    def __str__(self):
+        return "format:%s:version{%s}" % (self.name, str(self.version))
+
+text_encoding = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
+generic_format = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
+
+@dataclasses.dataclass(frozen=True)
+class KV3Header:
+    encoding: Encoding = text_encoding
+    format: Format = generic_format
+    def __str__(self):
+        return f"<!-- kv3 {self.encoding} {self.format} -->"
 
 class str_multiline(str):
     pass
