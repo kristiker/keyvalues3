@@ -1,37 +1,32 @@
 import dataclasses
 import enum
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Sequence, runtime_checkable
 from uuid import UUID
 
 @dataclasses.dataclass(frozen=True)
-class Encoding:
+class _HeaderPiece:
     name: str
     version: UUID
     def __post_init__(self):
         if not self.name.isidentifier():
-            raise ValueError(f"{self.name!r} is not a valid identifier")
+            raise ValueError(f"{self!r}: name is not a valid identifier")
         if not isinstance(self.version, UUID):
             self.version = UUID(hex=self.version)
     def __str__(self):
-        return "encoding:%s:version{%s}" % (self.name, str(self.version))
+        return "%s:%s:version{%s}" % (self.__class__.__name__.lower(), self.name, str(self.version))
 
 @dataclasses.dataclass(frozen=True)
-class Format:
-    name: str
-    version: UUID
-    def __post_init__(self):
-        if not self.name.isidentifier():
-            raise ValueError(f"{self.name!r} is not a valid identifier")
-    def __str__(self):
-        return "format:%s:version{%s}" % (self.name, str(self.version))
+class Encoding(_HeaderPiece): pass
+@dataclasses.dataclass(frozen=True)
+class Format(_HeaderPiece): pass
 
-text_encoding = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
-generic_format = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
+text = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
+generic = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
 
 @dataclasses.dataclass(frozen=True)
 class KV3Header:
-    encoding: Encoding = text_encoding
-    format: Format = generic_format
+    encoding: Encoding = text
+    format: Format = generic
     def __str__(self):
         return f"<!-- kv3 {self.encoding} {self.format} -->"
 
@@ -104,9 +99,9 @@ class Dataclass(Protocol):
 class KV3File:
     def __init__(self,
             value: kv3_types | Dataclass = None,
-            format: Format = generic_format,
+            format: Format = generic,
             validate_value: bool = False,
-            print_enums_as_ints: bool = False,
+            serialize_enums_as_ints: bool = False,
             ):
         
         self.header = KV3Header(format=format)
@@ -120,7 +115,7 @@ class KV3File:
         if validate_value:
             check_valid(self.value)
 
-        self.print_enums_as_ints = print_enums_as_ints
+        self.serialize_enums_as_ints = serialize_enums_as_ints
 
     def __str__(self):
         kv3 = str(self.header) + '\n'
@@ -139,7 +134,7 @@ class KV3File:
                 case True:
                     return 'true'
                 case enum.IntEnum():
-                    if self.print_enums_as_ints:
+                    if self.serialize_enums_as_ints:
                         return str(obj.value)
                     return obj.name
                 case str():
@@ -184,9 +179,13 @@ if __name__ == '__main__':
             self.assertEqual(str(KV3Header()), self.default_header)
 
         def test_custom_header(self):
-            header = KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))
-            headertext = '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
-            self.assertEqual(str(header), headertext)
+            self.assertEqual(
+                str(KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))),
+                '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
+            )
+            
+            with self.assertRaises(ValueError): Format('vpcf', "v2")
+            with self.assertRaises(ValueError): Format('vpcf1 with spaces', UUID(int = 0))
         
         def test_empty_instantiated_kv3file(self):
             self.assertEqual(
