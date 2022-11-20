@@ -124,7 +124,7 @@ class KV3File:
 
     def __str__(self):
         kv3 = str(KV3Header(encoding=text, format=self.format))
-        def object_serialize(object, indentation_level = 0, dictionary_object = False):
+        def object_serialize(object: kv3_types, indentation_level = 0, dictionary_object = False) -> str:
             indent = ("\t" * (indentation_level))
             indent_nested = ("\t" * (indentation_level + 1))
             match object:

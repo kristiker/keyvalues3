@@ -58,14 +58,14 @@ class BinaryV1UncompressedWriter:
 
         self.strings: list[str] = []
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         # header
         data = bytearray(b"VKV\x03")
         data += kv3.binary.version.bytes
         data += self.kv3file.format.version.bytes
         
         # string table and object
-        self.strings: list[str] = []
+        self.strings.clear()
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
         
         data += pack("<I", len(self.strings))
@@ -139,7 +139,7 @@ class BinaryV1UncompressedWriter:
                 rv += pack("<i", len(object))
                 for item in object:
                     rv += self.object_and_type_serialize(item)
-            case array.array(subType):
+            case array.array:
                 rv += pack("<i", len(object))
                 rv += pack("<B", BinaryTypes.int64)
                 rv += pack("<B", kv3.Flag(0).value)

@@ -1,5 +1,4 @@
 import parsimonious
-
 import keyvalues3 as kv3
 import uuid
 import itertools
@@ -41,11 +40,9 @@ kv3grammar = parsimonious.Grammar(
     """
 )
 
-
-
 class KV3TextReader(parsimonious.NodeVisitor):
     grammar = kv3grammar
-    unwrapped_exceptions: tuple[type[BaseException], ...] = (ValueError)
+    unwrapped_exceptions: tuple[type[BaseException], ...] = (ValueError,)
     class list_of_nodes(list):
         pass
     class NonObject(object):
