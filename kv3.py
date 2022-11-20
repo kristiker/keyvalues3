@@ -108,9 +108,9 @@ class KV3File:
 
         match value:
             case Dataclass():
-                self.value = dataclasses.asdict(value)
+                self.value: dict = dataclasses.asdict(value)
             case _:
-                self.value = value
+                self.value: kv3_types = value
 
         if validate_value:
             check_valid(self.value)
