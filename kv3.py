@@ -141,10 +141,10 @@ class KV3File:
                     if self.serialize_enums_as_ints:
                         return str(object.value)
                     return object.name
-                case str():
-                    return '"' + object + '"'
                 case str_multiline():
                     return '"""' + object + '"""'
+                case str():
+                    return '"' + object + '"'
                 case list():
                     qualifies_for_sameline = len(object) <= 4 and all(isinstance(item, (dict)) == False for item in object)
                     if qualifies_for_sameline:
