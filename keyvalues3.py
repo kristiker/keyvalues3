@@ -1,3 +1,4 @@
+import array
 import dataclasses
 import enum
 from typing import Protocol, runtime_checkable
@@ -39,7 +40,7 @@ class str_multiline(str):
     pass
 
 simple_types = None | bool | int | float | enum.IntEnum | str | str_multiline
-container_types = list[simple_types] | dict[str, simple_types]
+container_types = list[simple_types] | array.array | dict[str, simple_types]
 bytearrays = bytes | bytearray
 kv3_types = simple_types | container_types | bytearrays
 
@@ -66,7 +67,7 @@ def check_valid(value: kv3_types):
                 if not key.isidentifier():
                     raise ValueError("dict key is not a valid identifier") # I think
                 check_valid(nested_value)
-        case bytes() | bytearray():
+        case array.array() | bytes() | bytearray():
             pass
         case _:
             raise TypeError(f"Invalid type {type(value)} for KV3 value.")
@@ -164,6 +165,8 @@ class KV3File:
                     for key, value in object.items():
                         s += indent_nested + f"{key} = {object_serialize(value, indentation_level+1, dictionary_object=True)}\n"
                     return s + indent + "}"
+                case array.array():
+                    return "[ ]" # TODO
                 case bytes() | bytearray():
                     return f"#[{' '.join(f'{b:02x}' for b in object)}]"
                 case _:
