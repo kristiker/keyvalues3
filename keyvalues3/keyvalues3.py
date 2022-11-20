@@ -2,7 +2,7 @@ import array
 import dataclasses
 import enum
 from typing import Protocol, runtime_checkable
-from uuid import UUID, uuid4
+from uuid import UUID
 
 @dataclasses.dataclass(frozen=True)
 class _HeaderPiece:

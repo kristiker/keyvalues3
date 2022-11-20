@@ -1,6 +1,9 @@
 import unittest
 
-from keyvalues3 import *
+import enum
+import dataclasses
+import uuid
+from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid, str_multiline
 
 class Test_KV3File(unittest.TestCase):
     default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n'
@@ -9,12 +12,12 @@ class Test_KV3File(unittest.TestCase):
 
     def test_custom_header(self):
         self.assertEqual(
-            str(KV3Header(Encoding('text2', UUID(int = 0)), Format('generic2', UUID(int = 1)))),
+            str(KV3Header(Encoding('text2', uuid.UUID(int = 0)), Format('generic2', uuid.UUID(int = 1)))),
             '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->\n'
         )
 
         with self.assertRaises(ValueError): Format('vpcf', "v2")
-        with self.assertRaises(ValueError): Format('vpcf1 with spaces', UUID(int = 0))
+        with self.assertRaises(ValueError): Format('vpcf1 with spaces', uuid.UUID(int = 0))
 
     def test_empty_instantiated_kv3file(self):
         self.assertEqual(
@@ -72,7 +75,7 @@ class Test_KV3Value(unittest.TestCase):
     
     @dataclasses.dataclass
     class MyKV3Format:
-        format = Format('mycustomformat', uuid4())
+        format = Format('mycustomformat', uuid.uuid4())
         class Substance(enum.IntEnum):
             WATER = 0
             FIRE = 1
