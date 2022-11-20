@@ -1,6 +1,6 @@
 import parsimonious
 
-import kv3
+import keyvalues3 as kv3
 import uuid
 import itertools
 
