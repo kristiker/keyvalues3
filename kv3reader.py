@@ -42,29 +42,6 @@ kv3grammar = parsimonious.Grammar(
     """
 )
 
-v2 = """<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
-{
-	boolValue = false
-	intValue = 128
-	doubleValue = 64.000000
-	stringValue = "hello world"
-	stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
-	multiLineStringValue = ""\"""\"
-	arrayValue =
-	[
-		1,
-		2
-	]
-	objectValue =
-	{
-		n = 5
-		s = "foo"
-	}
-	// single line comment
-	/* multi
-	line
-	comment */
-}"""
 
 class list_of_nodes(list): pass
 NonObject = set()
@@ -152,6 +129,64 @@ class KV3Builder(parsimonious.NodeVisitor):
 
 #print(KV3Builder().visit(kv3grammar.parse(v2)))
 
+if __name__ == '__main__':
+    import unittest
 
-with open("tests/bt_config.kv3", "r") as f:
-    print(KV3Builder().visit(kv3grammar.parse(f.read())))
+    class Test_KV3Grammar(unittest.TestCase):
+        default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
+        def test_parses_bt_config(self):
+            with open("tests/bt_config.kv3", "r") as f:
+                kv3Nodes = kv3grammar.parse(f.read())
+                KV3Builder().visit(kv3Nodes)
+        def test_parses_null_kv3(self):
+            kv3Nodes = kv3grammar.parse(self.default_header + "null")
+            kv3 = KV3Builder().visit(kv3Nodes)
+            self.assertIsNone(kv3.value)
+        
+        def test_parses_kv3(self):
+            kv3text = self.default_header + """
+            {
+                boolValue = false
+                intValue = 128
+                doubleValue = 64.000000
+                stringValue = "hello world"
+                stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
+                multiLineStringValue = ""\"""\"
+                arrayValue =
+                [
+                    1,
+                    2
+                ]
+                objectValue =
+                {
+                    n = 5
+                    s = "foo"
+                }
+                // single line comment
+                /* multi
+                line
+                comment */
+            }"""
+            kv3Nodes = kv3grammar.parse(kv3text)
+            kv3 = KV3Builder().visit(kv3Nodes)
+
+        def test_prints_back_same_kv3(self):
+            kv3text = self.default_header + """
+            {
+                boolValue = false
+                intValue = 128
+                doubleValue = 64.0
+                stringValue = "hello world"
+                stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
+                multiLineStringValue = ""\"""\"
+                arrayValue = [1, 2]
+                objectValue = 
+                {
+                    n = 5
+                    s = "foo"
+                }
+            }""".strip().replace(" "*4, "\t").replace("\t"*3, "")
+            kv3 = KV3Builder().parse(kv3text)
+            self.assertEqual(str(kv3), kv3text)
+    
+    unittest.main()
