@@ -20,7 +20,12 @@ class Encoding(_HeaderPiece): pass
 @dataclasses.dataclass(frozen=True)
 class Format(_HeaderPiece): pass
 
+
+binary = Encoding("binary", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+binary_block_compressed = Encoding("binarybc", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+binary_block_lzma = Format("binarylzma", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
 text = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
+
 generic = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
 
 @dataclasses.dataclass(frozen=True)
@@ -171,7 +176,16 @@ class KV3File:
     def ToString(self): return self.__str__()
 
     def __bytes__(self):
-        ...
+        from binarywriter import BinaryV1UncompressedWriter
+        return bytes(BinaryV1UncompressedWriter(self))
+    
+    def ToBytes(self): return self.__bytes__()
+
+    @classmethod
+    def from_string(cls, string: str):
+        from textreader import KV3TextReader
+        return KV3TextReader().parse(string)
+
 
 if __name__ == '__main__':
     import unittest
