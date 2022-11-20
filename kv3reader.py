@@ -43,9 +43,9 @@ kv3grammar = parsimonious.Grammar(
 
 
 
-
-class KV3Builder(parsimonious.NodeVisitor):
+class KV3TextReader(parsimonious.NodeVisitor):
     grammar = kv3grammar
+    unwrapped_exceptions: tuple[type[BaseException], ...] = (ValueError)
     class list_of_nodes(list):
         pass
     class NonObject(object):
@@ -53,12 +53,19 @@ class KV3Builder(parsimonious.NodeVisitor):
     
     non_object = NonObject()
     
+    def parse(self, text: str) -> kv3.KV3File:
+        """Parse the given text into a KV3File object."""
+        return super().parse(text)
+    
+    loads = parse
+    read = parse
+
     def visit(self, node) -> kv3.KV3File:
         return super().visit(node)
     
     @staticmethod
     def is_object(node):
-        return node is not KV3Builder.non_object and not isinstance(node, KV3Builder.list_of_nodes)
+        return node is not KV3TextReader.non_object and not isinstance(node, KV3TextReader.list_of_nodes)
 
     def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.kv3_types]) -> kv3.KV3File:
         header = visited_children[0]
@@ -90,7 +97,7 @@ class KV3Builder(parsimonious.NodeVisitor):
     
     def visit_flags(self, _, visited_children):
         flag = kv3.Flag(0)
-        if isinstance(visited_children[0], KV3Builder.list_of_nodes):
+        if isinstance(visited_children[0], KV3TextReader.list_of_nodes):
             for child in visited_children[0]:
                 flag |= kv3.Flag[child[0].text]
         return flag | kv3.Flag[visited_children[1].text]
@@ -134,8 +141,8 @@ class KV3Builder(parsimonious.NodeVisitor):
         if node.expr_name == 'ws':
             return None
         if len(visited_children):
-            return KV3Builder.list_of_nodes(visited_children)
-        return node if node.expr_name else KV3Builder.non_object
+            return KV3TextReader.list_of_nodes(visited_children)
+        return node if node.expr_name else KV3TextReader.non_object
 
 if __name__ == '__main__':
     import unittest
@@ -145,11 +152,11 @@ if __name__ == '__main__':
         def test_parses_bt_config(self):
             with open("tests/bt_config.kv3", "r") as f:
                 kv3Nodes = kv3grammar.parse(f.read())
-                KV3Builder().visit(kv3Nodes)
+                KV3TextReader().visit(kv3Nodes)
         def test_parses_null_kv3(self):
             kv3Nodes = kv3grammar.parse(self.default_header + "null")
-            kv3 = KV3Builder().visit(kv3Nodes)
-            self.assertIsNone(kv3.value)
+            value = KV3TextReader().visit(kv3Nodes)
+            self.assertIsNone(value.value)
         
         def test_parses_kv3(self):
             kv3text = self.default_header + """
@@ -175,8 +182,7 @@ if __name__ == '__main__':
                 line
                 comment */
             }"""
-            kv3Nodes = kv3grammar.parse(kv3text)
-            kv3 = KV3Builder().visit(kv3Nodes)
+            value = KV3TextReader().parse(kv3text)
 
         def test_prints_back_same_kv3(self):
             kv3text = self.default_header + """
@@ -195,26 +201,26 @@ if __name__ == '__main__':
                     s = "foo"
                 }
             }""".strip().replace(" "*4, "\t").replace("\t"*3, "")
-            kv3 = KV3Builder().parse(kv3text)
-            self.assertEqual(str(kv3), kv3text)
+            value = KV3TextReader().parse(kv3text)
+            self.assertEqual(str(value), kv3text)
 
         def testflagged_value_base(self):
             self.assertEqual(
-                KV3Builder().parse(self.default_header + "resource:null").value,
+                KV3TextReader().parse(self.default_header + "resource:null").value,
                 kv3.flagged_value(value=None, flags=kv3.Flag.resource)
             )
             self.assertEqual(
-                KV3Builder().parse(self.default_header + "resourcename:{a=2}").value,
+                KV3TextReader().parse(self.default_header + "resourcename:{a=2}").value,
                 kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resourcename)
             )
         
         def testflagged_value_multi(self):
             self.assertEqual(
-                KV3Builder().parse(self.default_header + "resource+subclass:null").value,
+                KV3TextReader().parse(self.default_header + "resource+subclass:null").value,
                 kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
             )
             self.assertEqual(
-                KV3Builder().parse(self.default_header + "subclass+resource:null").value,
+                KV3TextReader().parse(self.default_header + "subclass+resource:null").value,
                 kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
             )
 
