@@ -16,8 +16,7 @@ kv3grammar = parsimonious.Grammar(
 
     array = "[" items "]"
         items = (ws* data ws* ",")* ws* (data ws*)?
-    dict = "{" pairs "}"
-        pairs = pair*
+    dict = "{" pair* "}"
         pair = ws? key ws? "=" ws* data ws*
             key = (identifier / string)
 
@@ -110,14 +109,11 @@ class KV3Builder(parsimonious.NodeVisitor):
         return rv
 
     def visit_dict(self, node, visited_children) -> dict:
-        return visited_children[1]
-    
-    def visit_pairs(self, node, visited_children) -> dict:
         rv = {}
-        for kvp in visited_children:
+        for kvp in visited_children[1]:
             rv[kvp[0]] = kvp[1]
         return rv
-
+    
     def visit_pair(self, node, visited_children) -> tuple[str, None | object | kv3.flagged_value]:
         it = (child for child in visited_children if self.is_object(child))
         return next(it), next(it)
