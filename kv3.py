@@ -74,7 +74,7 @@ def is_valid(value: kv3_types) -> bool:
         return False
 
 @enum.global_enum
-class Flag(enum.Flag):
+class Flag(enum.IntFlag):
     resource = enum.auto()
     resourcename = enum.auto()
     panorama = enum.auto()
@@ -106,11 +106,10 @@ class KV3File:
 
         self.header = KV3Header(format=format)
 
-        match value:
-            case Dataclass():
-                self.value: dict = dataclasses.asdict(value)
-            case _:
-                self.value: kv3_types = value
+        if isinstance(value, Dataclass) and not isinstance(value, flagged_value):
+            self.value: dict = dataclasses.asdict(value)
+        else:
+            self.value: kv3_types = value
 
         if validate_value:
             check_valid(self.value)

@@ -190,5 +190,15 @@ if __name__ == '__main__':
             }""".strip().replace(" "*4, "\t").replace("\t"*3, "")
             kv3 = KV3Builder().parse(kv3text)
             self.assertEqual(str(kv3), kv3text)
-    
+
+        def testflagged_value_base(self):
+            self.assertEqual(
+                KV3Builder().parse(self.default_header + "resource:null").value,
+                kv3.flagged_value(value=None, flags=kv3.Flag.resource)
+            )
+            self.assertEqual(
+                KV3Builder().parse(self.default_header + "resourcename:{}").value,
+                kv3.flagged_value(value={}, flags=kv3.Flag.resourcename)
+            )
+        
     unittest.main()
