@@ -33,7 +33,7 @@ kv3grammar = parsimonious.Grammar(
             triple_quote = '\"\"\"'
         binary_blob = '#[' ~'[0-9a-f]{2}' ']'
 
-    ws = ~r"\s+" / single_line_comment / multi_line_comment
+    ws = ~r"\\s+" / single_line_comment / multi_line_comment
     single_line_comment = ~r"//.*?\\n"
     multi_line_comment = ~"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"
 
