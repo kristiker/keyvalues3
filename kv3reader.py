@@ -46,9 +46,13 @@ kv3grammar = parsimonious.Grammar(
 
 class KV3Builder(parsimonious.NodeVisitor):
     grammar = kv3grammar
-    class list_of_nodes(list): pass
-    class NonObject(set): pass
+    class list_of_nodes(list):
+        pass
+    class NonObject(object):
+        pass
+    
     non_object = NonObject()
+    
     def visit(self, node) -> kv3.KV3File:
         return super().visit(node)
     
@@ -56,7 +60,7 @@ class KV3Builder(parsimonious.NodeVisitor):
     def is_object(node):
         return node is not KV3Builder.non_object and not isinstance(node, KV3Builder.list_of_nodes)
 
-    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | NonObject | None | object | kv3.flagged_value]) -> kv3.KV3File:
+    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.kv3_types]) -> kv3.KV3File:
         header = visited_children[0]
         if not isinstance(header, kv3.KV3Header):
             raise ValueError("kv3 has invalid header")
@@ -75,10 +79,10 @@ class KV3Builder(parsimonious.NodeVisitor):
     def visit_format(self, _, visited_children) -> kv3.Format:
         return kv3.Format(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
 
-    def visit_data(self, node, visited_children) -> None | object | kv3.flagged_value:
+    def visit_data(self, node, visited_children) -> kv3.kv3_types:
         return visited_children[0]
 
-    def visit_object(self, _, visited_children) -> None | object:
+    def visit_object(self, _, visited_children) -> kv3.kv3_types:
         return visited_children[0]
     
     def visit_object_flagged(self, _, visited_children) -> kv3.flagged_value:
@@ -132,8 +136,6 @@ class KV3Builder(parsimonious.NodeVisitor):
         if len(visited_children):
             return KV3Builder.list_of_nodes(visited_children)
         return node if node.expr_name else KV3Builder.non_object
-
-#print(KV3Builder().visit(kv3grammar.parse(v2)))
 
 if __name__ == '__main__':
     import unittest
@@ -202,8 +204,8 @@ if __name__ == '__main__':
                 kv3.flagged_value(value=None, flags=kv3.Flag.resource)
             )
             self.assertEqual(
-                KV3Builder().parse(self.default_header + "resourcename:{}").value,
-                kv3.flagged_value(value={}, flags=kv3.Flag.resourcename)
+                KV3Builder().parse(self.default_header + "resourcename:{a=2}").value,
+                kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resourcename)
             )
         
         def testflagged_value_multi(self):
