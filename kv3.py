@@ -64,7 +64,7 @@ def check_valid(value: kv3_types):
         case bytes() | bytearray():
             pass
         case _:
-            raise TypeError("Invalid type for KV3 value.")
+            raise TypeError(f"Invalid type {type(value)} for KV3 value.")
 
 def is_valid(value: kv3_types) -> bool:
     try:
@@ -104,7 +104,7 @@ class KV3File:
             serialize_enums_as_ints: bool = False,
             ):
 
-        self.header = KV3Header(format=format)
+        self.format = format
 
         if isinstance(value, Dataclass) and not isinstance(value, flagged_value):
             self.value: dict = dataclasses.asdict(value)
@@ -117,7 +117,7 @@ class KV3File:
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
     def __str__(self):
-        kv3 = str(self.header)
+        kv3 = str(KV3Header(encoding=text, format=self.format))
         def object_serialize(object, indentation_level = 0, dictionary_object = False):
             indent = ("\t" * (indentation_level))
             indent_nested = ("\t" * (indentation_level + 1))
@@ -252,7 +252,7 @@ if __name__ == '__main__':
             substance: Substance = Substance.WATER
 
         def test_kv3_value_validity(self):
-            with self.assertRaises(TypeError):  check_valid(value=tuple(5, 6, 7))
+            with self.assertRaises(TypeError):  check_valid(value=(5, 6, 7))
             with self.assertRaises(TypeError):  check_valid(value=flagged_value(set(), Flag(1)))
             with self.assertRaises(ValueError): check_valid(value={"key with space": 5})
             self.assertTrue(is_valid(value=None))
