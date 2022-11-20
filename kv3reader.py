@@ -43,32 +43,38 @@ kv3grammar = parsimonious.Grammar(
 )
 
 
-class list_of_nodes(list): pass
-NonObject = set()
+
 
 class KV3Builder(parsimonious.NodeVisitor):
     grammar = kv3grammar
+    class list_of_nodes(list): pass
+    class NonObject(set): pass
+    non_object = NonObject()
     def visit(self, node) -> kv3.KV3File:
         return super().visit(node)
     
     @staticmethod
     def is_object(node):
-        return node is not NonObject and not isinstance(node, list_of_nodes)
+        return node is not KV3Builder.non_object and not isinstance(node, KV3Builder.list_of_nodes)
 
-    def visit_kv3(self, node, visited_children) -> kv3.KV3File:
-        return kv3.KV3File(
-            next(data for data in visited_children[1:] if self.is_object(data)),
-            visited_children[0].format
-        )
+    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | NonObject | None | object | kv3.flagged_value]) -> kv3.KV3File:
+        header = visited_children[0]
+        if not isinstance(header, kv3.KV3Header):
+            raise ValueError("kv3 has invalid header")
+        try:
+            data = next(data for data in visited_children[1:] if self.is_object(data))
+        except StopIteration:
+            raise ValueError("kv3 contains no data")
+        else:
+            return kv3.KV3File(value = data, format = header.format)
 
-    def visit_header(self, _, visited_children):
+    def visit_header(self, _, visited_children) -> kv3.KV3Header:
         return kv3.KV3Header(encoding=visited_children[1], format=visited_children[3])
     
-    def visit_encoding(self, _, visited_children):
+    def visit_encoding(self, _, visited_children) -> kv3.Encoding:
         return kv3.Encoding(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
-    def visit_format(self, _, visited_children):
+    def visit_format(self, _, visited_children) -> kv3.Format:
         return kv3.Format(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
-    
 
     def visit_data(self, node, visited_children) -> None | object | kv3.flagged_value:
         return visited_children[0]
@@ -124,8 +130,8 @@ class KV3Builder(parsimonious.NodeVisitor):
         if node.expr_name == 'ws':
             return None
         if len(visited_children):
-            return list_of_nodes(visited_children)
-        return node if node.expr_name else NonObject
+            return KV3Builder.list_of_nodes(visited_children)
+        return node if node.expr_name else KV3Builder.non_object
 
 #print(KV3Builder().visit(kv3grammar.parse(v2)))
 
