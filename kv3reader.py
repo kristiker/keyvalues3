@@ -85,7 +85,11 @@ class KV3Builder(parsimonious.NodeVisitor):
         return kv3.flagged_value(value=visited_children[1], flags=visited_children[0][0])
     
     def visit_flags(self, _, visited_children):
-        return kv3.Flag[visited_children[1].text]
+        flag = kv3.Flag(0)
+        if isinstance(visited_children[0], KV3Builder.list_of_nodes):
+            for child in visited_children[0]:
+                flag |= kv3.Flag[child[0].text]
+        return flag | kv3.Flag[visited_children[1].text]
     
     def visit_null(self, node, visited_children): return None
     def visit_true(self, node, visited_children): return True
@@ -180,6 +184,7 @@ if __name__ == '__main__':
                 doubleValue = 64.0
                 stringValue = "hello world"
                 stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
+                stringThatIsAResourceAndSubclass = resource+subclass:"particles/items3_fx/star_emblem.vpcf"
                 multiLineStringValue = ""\"""\"
                 arrayValue = [1, 2]
                 objectValue = 
@@ -201,4 +206,14 @@ if __name__ == '__main__':
                 kv3.flagged_value(value={}, flags=kv3.Flag.resourcename)
             )
         
+        def testflagged_value_multi(self):
+            self.assertEqual(
+                KV3Builder().parse(self.default_header + "resource+subclass:null").value,
+                kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
+            )
+            self.assertEqual(
+                KV3Builder().parse(self.default_header + "subclass+resource:null").value,
+                kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
+            )
+
     unittest.main()
