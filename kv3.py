@@ -11,7 +11,7 @@ class _HeaderPiece:
         if not self.name.isidentifier():
             raise ValueError(f"{self!r}: name is not a valid identifier")
         if not isinstance(self.version, UUID):
-            self.version = UUID(hex=self.version)
+            raise ValueError(f"{self!r}: version is not an UUID object")
     def __str__(self):
         return "%s:%s:version{%s}" % (self.__class__.__name__.lower(), self.name, str(self.version))
 
@@ -151,8 +151,8 @@ class KV3File:
                         return "[" + ", ".join(object_serialize(item) for item in object) + "]"
                     s = f"\n{indent}[\n"
                     for item in object:
-                        s += (object_serialize(item, indentation_level+1) + ",\n")
-                    return s + indent + "]\n"
+                        s += indent_nested + (object_serialize(item, indentation_level+1) + ",\n")
+                    return s + indent + "]"
                 case dict():
                     s = indent + "{\n"
                     if dictionary_object:
@@ -163,7 +163,7 @@ class KV3File:
                 case bytes() | bytearray():
                     return f"#[{' '.join(f'{b:02x}' for b in object)}]"
                 case _:
-                    raise TypeError("Invalid type for KV3 value.")
+                    raise TypeError(f"Invalid type {type(object)} for KV3 value.")
 
         kv3 += object_serialize(self.value)
 
