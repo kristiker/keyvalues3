@@ -67,11 +67,20 @@ v2 = """<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} for
 }"""
 
 class list_of_nodes(list): pass
+NonObject = set()
 
 class KV3Builder(parsimonious.NodeVisitor):
-    def visit_kv3(self, node, visited_children):
+    grammar = kv3grammar
+    def visit(self, node) -> kv3.KV3File:
+        return super().visit(node)
+    
+    @staticmethod
+    def is_object(node):
+        return node is not NonObject and not isinstance(node, list_of_nodes)
+
+    def visit_kv3(self, node, visited_children) -> kv3.KV3File:
         return kv3.KV3File(
-            next(data for data in visited_children[1:] if data is not None),
+            next(data for data in visited_children[1:] if self.is_object(data)),
             visited_children[0].format
         )
 
@@ -113,7 +122,7 @@ class KV3Builder(parsimonious.NodeVisitor):
         for child in itertools.chain(visited_children[0], visited_children[2]):
             if child is None:
                 continue
-            it = (item for item in child if item is not None and not isinstance(item, list_of_nodes))
+            it = (item for item in child if self.is_object(item))
             rv.append(next(it))
         return rv
 
@@ -127,7 +136,7 @@ class KV3Builder(parsimonious.NodeVisitor):
         return rv
 
     def visit_pair(self, node, visited_children) -> tuple[str, None | object | kv3.flagged_value]:
-        it = (child for child in visited_children if child is not None and not isinstance(child, list_of_nodes))
+        it = (child for child in visited_children if self.is_object(child))
         return next(it), next(it)
     
     def visit_key(self, node, _) -> str:
@@ -139,7 +148,7 @@ class KV3Builder(parsimonious.NodeVisitor):
             return None
         if len(visited_children):
             return list_of_nodes(visited_children)
-        return node if node.expr_name else None
+        return node if node.expr_name else NonObject
 
 #print(KV3Builder().visit(kv3grammar.parse(v2)))
 
