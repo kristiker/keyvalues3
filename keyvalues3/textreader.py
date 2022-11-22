@@ -91,20 +91,20 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_object_flagged(self, _, visited_children) -> kv3.flagged_value:
         return kv3.flagged_value(value=visited_children[1], flags=visited_children[0][0])
     
-    def visit_flags(self, _, visited_children):
+    def visit_flags(self, _, visited_children) -> kv3.Flag:
         flag = kv3.Flag(0)
         if isinstance(visited_children[0], KV3TextReader.list_of_nodes):
             for child in visited_children[0]:
                 flag |= kv3.Flag[child[0].text]
         return flag | kv3.Flag[visited_children[1].text]
     
-    def visit_null(self, node, visited_children): return None
-    def visit_true(self, node, visited_children): return True
-    def visit_false(self, node, visited_children): return False
-    def visit_int(self, node, visited_children): return int(node.text)
-    def visit_float(self, node, visited_children): return float(node.text)
-    def visit_string(self, node, visited_children): return node.text[1:-1]
-    def visit_multiline_string(self, node, visited_children):
+    def visit_null(self, *_): return None
+    def visit_true(self, *_): return True
+    def visit_false(self, *_): return False
+    def visit_int(self, node, _): return int(node.text)
+    def visit_float(self, node, _): return float(node.text)
+    def visit_string(self, node, _): return node.text[1:-1]
+    def visit_multiline_string(self, node, _):
         # TODO: Fail if no \n?
         return kv3.str_multiline(node.text[3:-3].strip('\r\n'))
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])

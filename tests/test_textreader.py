@@ -19,7 +19,10 @@ class Test_KV3Grammar(unittest.TestCase):
     def test_parses_example_kv3(self):
         with open("tests/example.kv3", "r") as f:
             kv = KV3TextReader().parse(f.read()).value
-            self.assertEqual(kv["multiLineStringValue"], r"""Lorem ipsum \a \b \c \n ' " "" ðŸ˜Š""")
+            import sys
+            self.assertEqual(
+                kv["multiLineStringValue"],
+                rf"""Lorem ipsum \a \b \c \n ' " "" { "ðŸ˜Š" if sys.platform == "win32" else "😊"}""")
             self.assertEqual(kv["emptyMultiLineString"], "")
 
     def test_prints_back_same_kv3(self):
