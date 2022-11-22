@@ -28,8 +28,7 @@ kv3grammar = parsimonious.Grammar(
         int = ~"-?[0-9]+"
         float = ~"-?[0-9]+\\.[0-9]+"
         string = ~'"[^"]*"'
-        multiline_string = triple_quote triple_quote
-            triple_quote = '\"\"\"'
+        multiline_string = ~r'\"{3}(.*?)\\"{3}'us
         binary_blob = '#[' ~'[0-9a-f]{2}' ']'
 
     ws = ~r"\\s+" / single_line_comment / multi_line_comment
@@ -105,7 +104,9 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_int(self, node, visited_children): return int(node.text)
     def visit_float(self, node, visited_children): return float(node.text)
     def visit_string(self, node, visited_children): return node.text[1:-1]
-    def visit_multiline_string(self, node, visited_children): return kv3.str_multiline(node.text[3:-3])
+    def visit_multiline_string(self, node, visited_children):
+        # TODO: Fail if no \n?
+        return kv3.str_multiline(node.text[3:-3].strip('\r\n'))
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
     
     def visit_array(self, node, visited_children) -> list:
