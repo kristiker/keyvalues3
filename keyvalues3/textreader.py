@@ -9,7 +9,7 @@ kv3grammar = parsimonious.Grammar(
     header = "<!-- kv3 " encoding " " format " -->" ~r"\\r?\\n"
         encoding = "encoding:" identifier ":version" guid
         format = "format:" identifier ":version" guid
-            guid = ~"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
+            guid = ~r"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
 
     data = (object / object_flagged)
 
@@ -26,16 +26,16 @@ kv3grammar = parsimonious.Grammar(
         true = "true"
         false = "false"
         int = ~"-?[0-9]+"
-        float = ~"-?[0-9]+\\.[0-9]+"
-        string = ~'"[^"]*"'
+        float = ~r"-?[0-9]+\\.[0-9]+"
+        string = ~r'"[^"]*"'
         multiline_string = ~r'\"{3}(.*?)\\"{3}'us
-        binary_blob = '#[' ~'[0-9a-f]{2}' ']'
+        binary_blob = '#[' ~r'[0-9a-f]{2}' ']'
 
     ws = ~r"\\s+" / single_line_comment / multi_line_comment
     single_line_comment = ~r"//.*?\\n"
-    multi_line_comment = ~"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"
+    multi_line_comment = ~r"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"
 
-    identifier = ~"[a-zA-Z0-9_]+"i
+    identifier = ~r"[a-zA-Z0-9_]+"i
     """
 )
 
