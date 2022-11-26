@@ -5,8 +5,8 @@ import itertools
 
 kv3grammar = parsimonious.Grammar(
     """
-    kv3 = header ws* data ws*
-    header = "<!-- kv3 " encoding " " format " -->" ~r"\\r?\\n"
+    kv3 = header ws* data ws* # TODO: null needs whitespace after header but object doesnt
+    header = "<!--" ws+ "kv3" ws+ encoding ws+ format ws+ "-->"
         encoding = "encoding:" identifier ":version" guid
         format = "format:" identifier ":version" guid
             guid = ~r"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
@@ -75,7 +75,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return kv3.KV3File(value = data, format = header.format)
 
     def visit_header(self, _, visited_children) -> kv3.KV3Header:
-        return kv3.KV3Header(encoding=visited_children[1], format=visited_children[3])
+        return kv3.KV3Header(encoding=visited_children[4], format=visited_children[6])
     
     def visit_encoding(self, _, visited_children) -> kv3.Encoding:
         return kv3.Encoding(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
