@@ -33,7 +33,7 @@ class TestBinaryV1UncompressedWriter(unittest.TestCase):
             self.assertEqual(file.read(), null_VKV)
     
     def test_writes_bt_config(self):
-        with open("tests/bt_config.kv3", "r") as f:
+        with open("tests/documents/bt_config.kv3", "r") as f:
             kv3_obj = KV3TextReader().parse(f.read())
             with io.BytesIO() as file:
                 writer = BinaryV1UncompressedWriter(kv3_obj)
