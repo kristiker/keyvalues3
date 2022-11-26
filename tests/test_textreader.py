@@ -68,3 +68,50 @@ class Test_TextReading(unittest.TestCase):
             KV3TextReader().parse(self.default_header + "subclass+resource:null").value,
             kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
         )
+
+import pytest
+from pathlib import Path
+import shutil
+import subprocess
+import warnings
+
+dota2_path =  Path(r'D:\Games\steamapps\common\dota 2 beta')
+
+resourcecompiler = dota2_path / 'game' / 'bin' / 'win64' / 'resourcecompiler.exe'
+workdir = dota2_path / 'content' / 'dota_addons' / 'test_pykv3_parity'
+gamedir = dota2_path / 'game' / 'dota_addons' / 'test_pykv3_parity'
+
+workdir.mkdir(parents=True, exist_ok=True)
+
+files = []
+for kv3file in Path("tests/documents").glob('**/*.kv3'):
+    vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
+    shutil.copy(kv3file, vpcf_to_compile)
+    files.append((vpcf_to_compile, False if kv3file.stem == "not_kv3" else True))
+
+@pytest.mark.skipif(resourcecompiler.is_file() == False, reason="resourcecompiler not available")
+@pytest.mark.xfail()
+@pytest.mark.parametrize("file,assumed_valid", files)
+def test_parity(file: Path, assumed_valid: bool):
+    """Check parity with resourcecompiler"""
+    result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    if result.returncode != 0:
+        if assumed_valid:
+            warnings.warn(f"Resourcecompiler deems '{file.name}' as not valid KV3", UserWarning)
+        
+        # if resourcecompiler failed, we should fail too
+        with pytest.raises(Exception), open(file, "r") as f:
+            KV3TextReader().parse(f.read())
+    else:
+        if not assumed_valid:
+            warnings.warn(f"Resourcecompiler deems '{file.name}' as valid KV3", UserWarning)
+        
+        # if resourcecompiler succeeded, we should succeed too
+        with open(file, "r") as f:
+            KV3TextReader().parse(f.read())
+
+def test_actual_cleanup():
+    files.clear()
+    shutil.rmtree(workdir)
+    shutil.rmtree(gamedir)
