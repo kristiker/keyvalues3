@@ -5,11 +5,6 @@ from keyvalues3.textreader import KV3TextReader, kv3grammar
 
 class Test_TextReading(unittest.TestCase):
     default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
-
-    def test_parses_bt_config(self):
-        with open("tests/documents/bt_config.kv3", "r") as f:
-            kv3Nodes = kv3grammar.parse(f.read())
-            KV3TextReader().visit(kv3Nodes)
     
     def test_parses_null_kv3(self):
         kv3Nodes = kv3grammar.parse(self.default_header + "null")
@@ -19,6 +14,11 @@ class Test_TextReading(unittest.TestCase):
     def test_parses_crlf_header(self):
         value = KV3TextReader().parse(self.default_header.strip() + "\r\n" + "null")
         self.assertIsNone(value.value)
+
+    def test_parses_bt_config(self):
+        with open("tests/documents/bt_config.kv3", "r") as f:
+            kv3Nodes = kv3grammar.parse(f.read())
+            KV3TextReader().visit(kv3Nodes)
     
     def test_parses_example_kv3(self):
         with open("tests/documents/example.kv3", "r") as f:
