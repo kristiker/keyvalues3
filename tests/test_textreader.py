@@ -16,6 +16,10 @@ class Test_TextReading(unittest.TestCase):
         value = KV3TextReader().visit(kv3Nodes)
         self.assertIsNone(value.value)
     
+    def test_parses_crlf_header(self):
+        value = KV3TextReader().parse(self.default_header.strip() + "\r\n" + "null")
+        self.assertIsNone(value.value)
+    
     def test_parses_example_kv3(self):
         with open("tests/documents/example.kv3", "r") as f:
             kv = KV3TextReader().parse(f.read()).value

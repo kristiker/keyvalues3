@@ -6,7 +6,7 @@ import itertools
 kv3grammar = parsimonious.Grammar(
     """
     kv3 = header ws* data ws*
-    header = "<!-- kv3 " encoding " " format " -->\\n"
+    header = "<!-- kv3 " encoding " " format " -->" ~r"\\r?\\n"
         encoding = "encoding:" identifier ":version" guid
         format = "format:" identifier ":version" guid
             guid = ~"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
