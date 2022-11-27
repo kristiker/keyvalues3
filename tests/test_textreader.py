@@ -54,8 +54,8 @@ class Test_TextReading(unittest.TestCase):
             kv3.flagged_value(value=None, flags=kv3.Flag.resource)
         )
         self.assertEqual(
-            KV3TextReader().parse(self.default_header + "resourcename:{a=2}").value,
-            kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resourcename)
+            KV3TextReader().parse(self.default_header + "resource_name:{a=2}").value,
+            kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resource_name)
         )
     
     def testflagged_value_multi(self):
@@ -136,8 +136,8 @@ def test_parity(file: Path, assumed_valid: bool):
         with open(file, "r") as f:
             KV3TextReader().parse(f.read())
 
+@pytest.mark.skipif(resourcecompiler.is_file() == False)
 def test_actual_cleanup():
     vpfc_files.clear()
-    if resourcecompiler.is_file():
-        shutil.rmtree(workdir, ignore_errors=True)
-        shutil.rmtree(gamedir, ignore_errors=True)
+    shutil.rmtree(workdir, ignore_errors=True)
+    shutil.rmtree(gamedir, ignore_errors=True)

@@ -82,7 +82,7 @@ def is_valid(value: kv3_types) -> bool:
 @enum.global_enum
 class Flag(enum.IntFlag):
     resource = enum.auto()
-    resourcename = enum.auto()
+    resource_name = enum.auto()
     panorama = enum.auto()
     soundevent = enum.auto()
     subclass = enum.auto()

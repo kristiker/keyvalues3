@@ -93,10 +93,13 @@ class KV3TextReader(parsimonious.NodeVisitor):
     
     def visit_flags(self, _, visited_children) -> kv3.Flag:
         flag = kv3.Flag(0)
-        if isinstance(visited_children[0], KV3TextReader.list_of_nodes):
-            for child in visited_children[0]:
-                flag |= kv3.Flag[child[0].text]
-        return flag | kv3.Flag[visited_children[1].text]
+        try:
+            if isinstance(visited_children[0], KV3TextReader.list_of_nodes):
+                for child in visited_children[0]:
+                    flag |= kv3.Flag[child[0].text.lower()]
+            return flag | kv3.Flag[visited_children[1].text.lower()]
+        except KeyError as e:
+            raise ValueError(f"Invalid flag {e.args[0]!r}") from e
     
     def visit_null(self, *_): return None
     def visit_true(self, *_): return True
