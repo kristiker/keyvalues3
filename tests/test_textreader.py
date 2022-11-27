@@ -90,17 +90,32 @@ resourcecompiler = dota2_path / 'game' / 'bin' / 'win64' / 'resourcecompiler.exe
 workdir = dota2_path / 'content' / 'dota_addons' / 'test_pykv3_parity'
 gamedir = dota2_path / 'game' / 'dota_addons' / 'test_pykv3_parity'
 
-workdir.mkdir(parents=True, exist_ok=True)
+if resourcecompiler.is_file():
+    workdir.mkdir(parents=True, exist_ok=True)
 
-files = []
+kv3_files = []
+vpfc_files = []
+
 for kv3file in Path("tests/documents").glob('**/*.kv3'):
-    vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
-    shutil.copy(kv3file, vpcf_to_compile)
-    files.append((vpcf_to_compile, False if kv3file.stem == "not_kv3" else True))
+    assumed_valid = False if kv3file.stem == "not_kv3" else True
+    kv3_files.append((kv3file, assumed_valid))
+    if resourcecompiler.is_file():
+        vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
+        shutil.copy(kv3file, vpcf_to_compile)
+        vpfc_files.append((vpcf_to_compile, assumed_valid))
+
+@pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
+@pytest.mark.parametrize("file,assumed_valid", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
+def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool):
+    with open(file, "r") as f:
+        if assumed_valid:
+            KV3TextReader().parse(f.read())
+            return
+        with pytest.raises(Exception):
+            KV3TextReader().parse(f.read())
 
 @pytest.mark.skipif(resourcecompiler.is_file() == False, reason="resourcecompiler not available")
-#@pytest.mark.xfail()
-@pytest.mark.parametrize("file,assumed_valid", files)
+@pytest.mark.parametrize("file,assumed_valid", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
 def test_parity(file: Path, assumed_valid: bool):
     """Check parity with resourcecompiler"""
     result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -110,8 +125,9 @@ def test_parity(file: Path, assumed_valid: bool):
             warnings.warn(f"Resourcecompiler deems '{file.name}' as not valid KV3", UserWarning)
         
         # if resourcecompiler failed, we should fail too
-        with pytest.raises(Exception), open(file, "r") as f:
-            KV3TextReader().parse(f.read())
+        with pytest.raises(Exception):
+            with open(file, "r") as f:
+                KV3TextReader().parse(f.read())
     else:
         if not assumed_valid:
             warnings.warn(f"Resourcecompiler deems '{file.name}' as valid KV3", UserWarning)
@@ -121,6 +137,7 @@ def test_parity(file: Path, assumed_valid: bool):
             KV3TextReader().parse(f.read())
 
 def test_actual_cleanup():
-    files.clear()
-    shutil.rmtree(workdir, ignore_errors=True)
-    shutil.rmtree(gamedir, ignore_errors=True)
+    vpfc_files.clear()
+    if resourcecompiler.is_file():
+        shutil.rmtree(workdir, ignore_errors=True)
+        shutil.rmtree(gamedir, ignore_errors=True)
