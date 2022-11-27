@@ -111,8 +111,15 @@ resourcecompiler = dota2_path / 'game' / 'bin' / 'win64' / 'resourcecompiler.exe
 workdir = dota2_path / 'content' / 'dota_addons' / 'test_pykv3_parity'
 gamedir = dota2_path / 'game' / 'dota_addons' / 'test_pykv3_parity'
 
-if resourcecompiler.is_file():
-    workdir.mkdir(parents=True, exist_ok=True)
+@pytest.fixture
+def setup_teardown():
+    if resourcecompiler.is_file():
+        workdir.mkdir(parents=True, exist_ok=True)
+    yield
+    if resourcecompiler.is_file():
+        vpfc_files.clear()
+        shutil.rmtree(workdir, ignore_errors=True)
+        shutil.rmtree(gamedir, ignore_errors=True)
 
 kv3_files = []
 vpfc_files = []
@@ -126,7 +133,7 @@ for kv3file in Path("tests/documents").glob('*.kv3'):
         vpfc_files.append((vpcf_to_compile, assumed_valid))
 
 @pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
-@pytest.mark.parametrize("file,assumed_valid", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
+@pytest.mark.parametrize("file,assumed_valid", kv3_files, ids=[f"'{f.name}'-{v}" for f, v in kv3_files])
 def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool):
     with open(file, "r") as f:
         if assumed_valid:
@@ -156,9 +163,3 @@ def test_parity(file: Path, assumed_valid: bool):
         # if resourcecompiler succeeded, we should succeed too
         with open(file, "r") as f:
             KV3TextReader().parse(f.read())
-
-@pytest.mark.skipif(resourcecompiler.is_file() == False, reason="[test_parity] skipped, cleanup not needed")
-def test_actual_cleanup():
-    vpfc_files.clear()
-    shutil.rmtree(workdir, ignore_errors=True)
-    shutil.rmtree(gamedir, ignore_errors=True)
