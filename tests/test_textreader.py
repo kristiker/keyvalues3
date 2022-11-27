@@ -153,7 +153,7 @@ def test_parity(file: Path, assumed_valid: bool):
         with open(file, "r") as f:
             KV3TextReader().parse(f.read())
 
-@pytest.mark.skipif(resourcecompiler.is_file() == False)
+@pytest.mark.skipif(resourcecompiler.is_file() == False, reason="[test_parity] skipped, cleanup not needed")
 def test_actual_cleanup():
     vpfc_files.clear()
     shutil.rmtree(workdir, ignore_errors=True)
