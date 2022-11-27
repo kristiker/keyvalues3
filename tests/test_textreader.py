@@ -113,5 +113,5 @@ def test_parity(file: Path, assumed_valid: bool):
 
 def test_actual_cleanup():
     files.clear()
-    shutil.rmtree(workdir)
-    shutil.rmtree(gamedir)
+    shutil.rmtree(workdir, ignore_errors=True)
+    shutil.rmtree(gamedir, ignore_errors=True)
