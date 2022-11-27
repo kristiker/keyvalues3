@@ -90,7 +90,7 @@ for kv3file in Path("tests/documents").glob('**/*.kv3'):
     files.append((vpcf_to_compile, False if kv3file.stem == "not_kv3" else True))
 
 @pytest.mark.skipif(resourcecompiler.is_file() == False, reason="resourcecompiler not available")
-@pytest.mark.xfail()
+#@pytest.mark.xfail()
 @pytest.mark.parametrize("file,assumed_valid", files)
 def test_parity(file: Path, assumed_valid: bool):
     """Check parity with resourcecompiler"""

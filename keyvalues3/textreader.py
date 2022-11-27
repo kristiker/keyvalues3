@@ -114,7 +114,9 @@ class KV3TextReader(parsimonious.NodeVisitor):
     
     def visit_items(self, node, visited_children) -> list:
         rv = []
-        for child in itertools.chain(visited_children[0], visited_children[2]):
+        items_comma = visited_children[0] if isinstance(visited_children[0], KV3TextReader.list_of_nodes) else []
+        item_no_comma = visited_children[2] if isinstance(visited_children[2], KV3TextReader.list_of_nodes) else []
+        for child in itertools.chain(items_comma, item_no_comma):
             if child is None:
                 continue
             it = (item for item in child if self.is_object(item))
