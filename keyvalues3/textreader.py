@@ -25,7 +25,7 @@ kv3grammar = parsimonious.Grammar(
         null = "null"
         true = "true"
         false = "false"
-        number = ~r"[+-]*" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
+        number = ~r"[+-]?" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
         string = ~r'"[^"]*"'
         multiline_string = ~r'\"{3}(.*?)\\"{3}'us
         binary_blob = '#[' ~r'[0-9a-f]{2}' ']'
@@ -103,24 +103,19 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_false(self, *_): return False
     def visit_number(self, node, _) -> int | float:
         sign, number = node
-        if sign:
-            if sign.text == "": sign = 1
-            elif sign.text == "-": sign = -1
-            elif sign.text == "+": sign = 1
-            else:
-                return float(0.0)
+        sign = sign.text if sign else ""
         # number is anyof(regexnode)
         groups = number.children[0].match.groups()
         if not len(groups):
             # nan or inf
-            return float(number.text) * sign
+            return float(sign + number.text)
         if groups[2] is not None:
             # scientific notation
-            return float(groups[0] + groups[2].split('.')[0]) * sign
+            return float(sign + groups[0] + groups[2].split('.')[0])
         if groups[1] is None:
             # no decimal point
-            return int(groups[0]) * sign
-        return float(groups[0]) * sign
+            return int(sign + groups[0])
+        return float(sign + groups[0])
 
     def visit_string(self, node, _): return node.text[1:-1]
     def visit_multiline_string(self, node, _):

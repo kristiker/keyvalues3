@@ -18,7 +18,7 @@
     two_scientific =        2.0e+1
     two_scientific2 =       2e+3.99 // The .99 is allowed and discarded
     nan =                   NaN
-    plus_minus_thousand =   +-+----+10000.0 // compiles to 0.0
+    //plus_minus_thousand =   +-+----+10000.0 // compiles to 0.0
     plus_inf =              +inf
     minus_inf =             -inf
 
