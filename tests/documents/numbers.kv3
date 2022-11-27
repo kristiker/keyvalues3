@@ -1,0 +1,11 @@
+<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
+{
+    random =                420
+    plus_zero =             +0
+    minus_zero =            -0
+    two_scientific =        2.0e+1
+    nan =                   NaN
+    plus_minus_thousand =   +-+----+10000.0
+    plus_inf =              +inf
+    minus_inf =             -inf
+}
