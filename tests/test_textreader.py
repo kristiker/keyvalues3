@@ -5,7 +5,7 @@ from keyvalues3.textreader import KV3TextReader, kv3grammar
 
 class Test_TextReading(unittest.TestCase):
     default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
-    
+
     def test_parses_null_kv3(self):
         kv3Nodes = kv3grammar.parse(self.default_header + "null")
         value = KV3TextReader().visit(kv3Nodes)
@@ -66,6 +66,16 @@ class Test_TextReading(unittest.TestCase):
         self.assertEqual(
             KV3TextReader().parse(self.default_header + "subclass|resource:null").value,
             kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
+        )
+    
+    def test_binary_blob_reading(self):
+        self.assertEqual(
+            KV3TextReader().parse(self.default_header + "#[00 01 02 03]").value,
+            bytes(b"\x00\x01\x02\x03")
+        )
+        self.assertEqual(
+            KV3TextReader().parse(self.default_header + "#[DEADBEEF]").value,
+            bytes(b"\xDE\xAD\xBE\xEF")
         )
 
 import pytest
