@@ -136,14 +136,11 @@ class KV3File:
             indent_nested = ("\t" * (indentation_level + 1))
             match object:
                 case flagged_value(value, flags):
-                    object_serialized = object_serialize(value)
                     if flags & Flag.multilinestring:
-                        object_serialized = f'"""\n{object_serialized[1:1]}"""'
-                        if flags == Flag.multilinestring:
-                            return object_serialized
+                        return  f'"""\n{value}"""'
                     if flags:
-                        return f"{flags}:{object_serialized}"
-                    return object_serialized
+                        return f"{flags}:{object_serialize(value)}"
+                    return object_serialize(value)
                 case None:
                     return "null"
                 case False:
@@ -190,7 +187,7 @@ class KV3File:
 
     #def __bytes__(self):
     #    return bytes(BinaryV1UncompressedWriter(self))
-    
+
     def ToBytes(self): return self.__bytes__()
 
     #@classmethod
