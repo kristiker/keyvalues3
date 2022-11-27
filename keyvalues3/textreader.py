@@ -16,7 +16,7 @@ kv3grammar = parsimonious.Grammar(
     array = "[" items "]"
         items = (ws* data ws* ",")* ws* (data ws*)?
     dict = "{" pair* "}"
-        pair = ws? key ws? "=" ws* data ws*
+        pair = ws* key ws* "=" ws* data ws*
             key = (identifier / string)
 
     object_flagged = (flags ":") object
