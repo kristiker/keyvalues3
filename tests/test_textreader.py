@@ -77,6 +77,23 @@ class Test_TextReading(unittest.TestCase):
             KV3TextReader().parse(self.default_header + "#[DEADBEEF]").value,
             bytes(b"\xDE\xAD\xBE\xEF")
         )
+    
+    def test_multiline_strngs(self):
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""" """')
+        #with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""\r"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""a\n"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""a\n\n"""')
+
+        assert KV3TextReader().parse(self.default_header + '"""\n"""').value == ""
+        assert KV3TextReader().parse(self.default_header + '"""\r\n"""').value == ""
+        assert KV3TextReader().parse(self.default_header + '"""\na"""').value == "a"
+        assert KV3TextReader().parse(self.default_header + '"""\na\n"""').value == "a\n"
+
+        
 
 import pytest
 from pathlib import Path
