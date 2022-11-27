@@ -3,7 +3,7 @@ import unittest
 import enum
 import dataclasses
 import uuid
-from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid, str_multiline
+from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid
 
 class Test_KV3File(unittest.TestCase):
     default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
@@ -92,7 +92,7 @@ class Test_KV3Value(unittest.TestCase):
         self.assertTrue(is_valid(value=1.0))
         self.assertTrue(is_valid(value=self.MyKV3Format.Substance.FIRE))
         self.assertTrue(is_valid(value=str()))
-        self.assertTrue(is_valid(value=str_multiline()))
+        self.assertTrue(is_valid(value=flagged_value(str(), Flag.multilinestring)))
         self.assertTrue(is_valid(value=[]))
         self.assertTrue(is_valid(value={}))
         self.assertTrue(is_valid(value=bytes(byte for byte in range(256))))
@@ -117,6 +117,16 @@ class Test_KV3Value(unittest.TestCase):
         d['dub'] = d
         with self.assertRaises(ValueError):
             check_valid(d)
+    
+    def test_flagged_value_equality(self):
+        self.assertEqual(flagged_value("multi\nline\nstring", Flag.multilinestring), "multi\nline\nstring")
+        self.assertEqual(flagged_value(9999), 9999)
+        self.assertEqual(flagged_value(5, Flag.resource), flagged_value(5, Flag.resource))
+
+        self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(5, Flag.resource_name))
+        self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(9999, Flag.resource))
+        self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(9999, Flag.resource_name))
+        self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(5, Flag.resource | Flag.resource_name))
 
     def test_value_serializes(self):
         KV3File(value=None).ToString()
@@ -126,7 +136,8 @@ class Test_KV3Value(unittest.TestCase):
         KV3File(value=1.0).ToString()
         KV3File(value=self.MyKV3Format.Substance.FIRE).ToString()
         KV3File(value=str()).ToString()
-        KV3File(value=str_multiline()).ToString()
+        KV3File(value=flagged_value(str(), Flag.multilinestring)).ToString()
+        KV3File(value=flagged_value(str(), Flag.resource)).ToString()
         KV3File(value=[]).ToString()
         KV3File(value={}).ToString()
         KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format).ToString()

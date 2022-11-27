@@ -36,10 +36,8 @@ class KV3Header:
     def __str__(self):
         return f"<!-- kv3 {self.encoding} {self.format} -->"
 
-class str_multiline(str):
-    pass
 
-simple_types = None | bool | int | float | enum.IntEnum | str | str_multiline
+simple_types = None | bool | int | float | enum.IntEnum | str
 container_types = list[simple_types] | array.array | dict[str, simple_types]
 bytearrays = bytes | bytearray
 kv3_types = simple_types | container_types | bytearrays
@@ -48,7 +46,7 @@ def check_valid(value: kv3_types):
     match value:
         case flagged_value(actual_value, _):
             return check_valid(actual_value)
-        case None | bool() | float() | enum.IntEnum() | str() | str_multiline():
+        case None | bool() | float() | enum.IntEnum() | str():
             pass
         case int():
             if value > 2**64 - 1: raise OverflowError("int value is bigger than biggest UInt64")
@@ -83,6 +81,7 @@ def is_valid(value: kv3_types) -> bool:
 class Flag(enum.IntFlag):
     resource = enum.auto()
     resource_name = enum.auto()
+    multilinestring = enum.auto()
     panorama = enum.auto()
     soundevent = enum.auto()
     subclass = enum.auto()
@@ -95,6 +94,14 @@ class Flag(enum.IntFlag):
 class flagged_value:
     value: kv3_types
     flags: Flag = Flag(0)
+
+    def __eq__(self, other):
+        if isinstance(other, flagged_value):
+            return self.value == other.value and self.flags == other.flags
+        else:
+            if self.flags == Flag(0) or self.flags == Flag.multilinestring:
+                return self.value == other
+            return False
 
 kv3_types = kv3_types | flagged_value
 
@@ -129,9 +136,14 @@ class KV3File:
             indent_nested = ("\t" * (indentation_level + 1))
             match object:
                 case flagged_value(value, flags):
+                    object_serialized = object_serialize(value)
+                    if flags & Flag.multilinestring:
+                        object_serialized = f'"""\n{object_serialized[1:1]}"""'
+                        if flags == Flag.multilinestring:
+                            return object_serialized
                     if flags:
-                        return f"{flags}:{object_serialize(value)}"
-                    return object_serialize(value)
+                        return f"{flags}:{object_serialized}"
+                    return object_serialized
                 case None:
                     return "null"
                 case False:
@@ -146,8 +158,6 @@ class KV3File:
                     if self.serialize_enums_as_ints:
                         return str(object.value)
                     return object.name
-                case str_multiline():
-                    return '"""' + object + '"""'
                 case str():
                     return '"' + object + '"'
                 case list():

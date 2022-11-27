@@ -24,9 +24,12 @@ class Test_TextReading(unittest.TestCase):
         with open("tests/documents/example.kv3", "r", encoding="utf-8") as f:
             kv = KV3TextReader().parse(f.read()).value
             self.assertEqual(
-                kv["multiLineStringValue"],
-                r"""Lorem ipsum \a \b \c \n ' " "" 😊""")
-            self.assertEqual(kv["emptyMultiLineString"], "")
+                kv["multiLineStringValue"].value,
+                r"""Lorem ipsum \a \b \c \n ' " "" 😊
+""")
+            self.assertIsInstance(kv["emptyMultiLineString"], kv3.flagged_value)
+            self.assertEqual(kv["emptyMultiLineString"].value, "")
+            self.assertEqual(kv["emptyMultiLineString"].flags, kv3.Flag.multilinestring)
 
     def test_prints_back_same_kv3(self):
         kv3text = self.default_header + """
@@ -37,7 +40,8 @@ class Test_TextReading(unittest.TestCase):
     stringValue = "hello world"
     stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
     stringThatIsAResourceAndSubclass = resource|subclass:"particles/items3_fx/star_emblem.vpcf"
-    multiLineStringValue = ""\"""\"
+    multiLineStringValue = ""\"
+""\"
     arrayValue = [1, 2]
     objectValue = 
     {
@@ -46,7 +50,7 @@ class Test_TextReading(unittest.TestCase):
     }
 }""".strip().replace(" "*4, "\t")
         value = KV3TextReader().parse(kv3text)
-        self.assertEqual(str(value), kv3text)
+        self.assertEqual(kv3text, str(value))
 
     def testflagged_value_base(self):
         self.assertEqual(
@@ -113,7 +117,7 @@ if resourcecompiler.is_file():
 kv3_files = []
 vpfc_files = []
 
-for kv3file in Path("tests/documents").glob('**/*.kv3'):
+for kv3file in Path("tests/documents").glob('*.kv3'):
     assumed_valid = False if kv3file.stem == "not_kv3" else True
     kv3_files.append((kv3file, assumed_valid))
     if resourcecompiler.is_file():

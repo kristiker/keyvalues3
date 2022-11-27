@@ -122,7 +122,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     def visit_string(self, node, _): return node.text[1:-1]
     def visit_multiline_string(self, node, _):
-        return kv3.str_multiline(node.match.group(1))
+        return kv3.flagged_value(node.match.group(1), kv3.Flag.multilinestring)
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
     
     def visit_array(self, node, visited_children) -> list:
