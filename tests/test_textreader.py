@@ -21,12 +21,11 @@ class Test_TextReading(unittest.TestCase):
             KV3TextReader().visit(kv3Nodes)
     
     def test_parses_example_kv3(self):
-        with open("tests/documents/example.kv3", "r") as f:
+        with open("tests/documents/example.kv3", "r", encoding="utf-8") as f:
             kv = KV3TextReader().parse(f.read()).value
-            import sys
             self.assertEqual(
                 kv["multiLineStringValue"],
-                rf"""Lorem ipsum \a \b \c \n ' " "" { "ðŸ˜Š" if sys.platform == "win32" else "😊"}""")
+                r"""Lorem ipsum \a \b \c \n ' " "" 😊""")
             self.assertEqual(kv["emptyMultiLineString"], "")
 
     def test_prints_back_same_kv3(self):
