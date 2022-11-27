@@ -20,7 +20,7 @@ kv3grammar = parsimonious.Grammar(
             key = (identifier / string)
 
     object_flagged = (flags ":") object
-        flags = (identifier "+")* identifier
+        flags = (identifier "|")* identifier
     object = null / true / false / float / int / multiline_string / string / dict / array / binary_blob
         null = "null"
         true = "true"

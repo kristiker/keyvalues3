@@ -37,7 +37,7 @@ class Test_TextReading(unittest.TestCase):
     doubleValue = 64.0
     stringValue = "hello world"
     stringThatIsAResourceReference = resource:"particles/items3_fx/star_emblem.vpcf"
-    stringThatIsAResourceAndSubclass = resource+subclass:"particles/items3_fx/star_emblem.vpcf"
+    stringThatIsAResourceAndSubclass = resource|subclass:"particles/items3_fx/star_emblem.vpcf"
     multiLineStringValue = ""\"""\"
     arrayValue = [1, 2]
     objectValue = 
@@ -61,11 +61,11 @@ class Test_TextReading(unittest.TestCase):
     
     def testflagged_value_multi(self):
         self.assertEqual(
-            KV3TextReader().parse(self.default_header + "resource+subclass:null").value,
+            KV3TextReader().parse(self.default_header + "resource|subclass:null").value,
             kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
         )
         self.assertEqual(
-            KV3TextReader().parse(self.default_header + "subclass+resource:null").value,
+            KV3TextReader().parse(self.default_header + "subclass|resource:null").value,
             kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
         )
 

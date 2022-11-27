@@ -87,7 +87,7 @@ class Flag(enum.IntFlag):
     soundevent = enum.auto()
     subclass = enum.auto()
     def __str__(self):
-        return "+".join(flag.name for flag in self.__class__ if self.value & flag)
+        return "|".join(flag.name for flag in self.__class__ if self.value & flag)
     def __call__(self, value: kv3_types):
         return flagged_value(value, self)
 
