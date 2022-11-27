@@ -21,12 +21,11 @@ kv3grammar = parsimonious.Grammar(
 
     object_flagged = (flags ":") object
         flags = (identifier "|")* identifier
-    object = null / true / false / float / int / multiline_string / string / dict / array / binary_blob
+    object = null / true / false / number / multiline_string / string / dict / array / binary_blob
         null = "null"
         true = "true"
         false = "false"
-        int = ~"-?[0-9]+"
-        float = ~r"-?[0-9]+\\.[0-9]+"
+        number = ~r"[+-]*" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
         string = ~r'"[^"]*"'
         multiline_string = ~r'\"{3}(.*?)\\"{3}'us
         binary_blob = '#[' ~r'[0-9a-f]{2}' ']'
@@ -45,7 +44,8 @@ class KV3TextReader(parsimonious.NodeVisitor):
     class list_of_nodes(list):
         pass
     class NonObject(object):
-        pass
+        def __bool__(self):
+            return False
     
     non_object = NonObject()
     
@@ -101,8 +101,27 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_null(self, *_): return None
     def visit_true(self, *_): return True
     def visit_false(self, *_): return False
-    def visit_int(self, node, _): return int(node.text)
-    def visit_float(self, node, _): return float(node.text)
+    def visit_number(self, node, _) -> int | float:
+        sign, number = node
+        if sign:
+            if sign.text == "": sign = 1
+            elif sign.text == "-": sign = -1
+            elif sign.text == "+": sign = 1
+            else:
+                return float(0.0)
+        # number is anyof(regexnode)
+        groups = number.children[0].match.groups()
+        if not len(groups):
+            # nan or inf
+            return float(number.text) * sign
+        if groups[2] is not None:
+            # scientific notation
+            return float(groups[0] + groups[2].split('.')[0]) * sign
+        if groups[1] is None:
+            # no decimal point
+            return int(groups[0]) * sign
+        return float(groups[0]) * sign
+
     def visit_string(self, node, _): return node.text[1:-1]
     def visit_multiline_string(self, node, _):
         # TODO: Fail if no \n?

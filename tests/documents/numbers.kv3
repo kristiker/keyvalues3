@@ -3,9 +3,23 @@
     random =                420
     plus_zero =             +0
     minus_zero =            -0
+    float =                 3.141592653589793
+    float2 =                3.
+    float3 =                .141592653589793
+    float4 =                3.e+1
+    float5 =                .141592653589793e+1
+    float6 =                3.14E3
+    //float6 =                3.14e
+    //float7 =                3.14e+
+    //float8 =                3.14-1
+    //float9 =                3.14+2
+    //float10 =               e
+    //float11 =               e+
     two_scientific =        2.0e+1
+    two_scientific2 =       2e+3.99 // The .99 is allowed and discarded
     nan =                   NaN
-    plus_minus_thousand =   +-+----+10000.0
+    plus_minus_thousand =   +-+----+10000.0 // compiles to 0.0
     plus_inf =              +inf
     minus_inf =             -inf
+
 }
