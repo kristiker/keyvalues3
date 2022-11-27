@@ -6,14 +6,14 @@ import uuid
 from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid, str_multiline
 
 class Test_KV3File(unittest.TestCase):
-    default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n'
+    default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
     def test_default_header(self):
         self.assertEqual(str(KV3Header()), self.default_header)
 
     def test_custom_header(self):
         self.assertEqual(
             str(KV3Header(Encoding('text2', uuid.UUID(int = 0)), Format('generic2', uuid.UUID(int = 1)))),
-            '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->\n'
+            '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
         )
 
         with self.assertRaises(ValueError): Format('vpcf', "v2")
@@ -22,7 +22,7 @@ class Test_KV3File(unittest.TestCase):
     def test_empty_instantiated_kv3file(self):
         self.assertEqual(
             KV3File().ToString(),
-            self.default_header + "null"
+            self.default_header + "\nnull"
         )
 
     def test_dataclass_instantiated_kv3file(self):
@@ -33,7 +33,7 @@ class Test_KV3File(unittest.TestCase):
             c: list = dataclasses.field(default_factory=lambda: ["listed_text1", "listed_text2"])
         self.assertEqual(
             KV3File(MyKV3Format()).ToString(),
-            self.default_header + """
+            self.default_header + "\n" + """
             {
                 a = "asd asd"
                 b = 
@@ -57,7 +57,7 @@ class Test_KV3File(unittest.TestCase):
                 'c': ["listed_text1", "listed_text2"]
             }
             ).ToString(),
-            self.default_header + """
+            self.default_header + "\n" + """
             {
                 a = "asd asd"
                 b = 

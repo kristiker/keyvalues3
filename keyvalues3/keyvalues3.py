@@ -34,7 +34,7 @@ class KV3Header:
     encoding: Encoding = text
     format: Format = generic
     def __str__(self):
-        return f"<!-- kv3 {self.encoding} {self.format} -->\n"
+        return f"<!-- kv3 {self.encoding} {self.format} -->"
 
 class str_multiline(str):
     pass
@@ -123,7 +123,7 @@ class KV3File:
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
     def __str__(self):
-        kv3 = str(KV3Header(encoding=text, format=self.format))
+        kv3 = str(KV3Header(encoding=text, format=self.format)) + "\n"
         def object_serialize(object: kv3_types, indentation_level = 0, dictionary_object = False) -> str:
             indent = ("\t" * (indentation_level))
             indent_nested = ("\t" * (indentation_level + 1))
