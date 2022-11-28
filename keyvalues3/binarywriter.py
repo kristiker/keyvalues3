@@ -5,7 +5,6 @@ from struct import pack
 import keyvalues3 as kv3
 
 class BinaryTypes(enum.IntEnum):
-    string_multi = 0
     null = 1
     boolean = 2
     int64 = 3
@@ -24,12 +23,6 @@ class BinaryTypes(enum.IntEnum):
     int64_one = 16
     double_zero = 17
     double_one = 18
-
-simple_types = {
-    None: BinaryTypes.null,
-    True: BinaryTypes.boolean_true,
-    False: BinaryTypes.boolean_false,
-}
 
 types = {
     int: BinaryTypes.int64,
@@ -63,16 +56,16 @@ class BinaryV1UncompressedWriter:
         data = bytearray(b"VKV\x03")
         data += kv3.binary.version.bytes
         data += self.kv3file.format.version.bytes
-        
+
         # string table and object
         self.strings.clear()
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
-        
+
         data += pack("<I", len(self.strings))
         for string in self.strings:
             data += string.encode("utf-8")
             data += b"\x00"
-        
+
         return bytes(data + object_serialized)
 
     def write(self, file: BinaryIO):
@@ -91,16 +84,12 @@ class BinaryV1UncompressedWriter:
                 return pack("<B", type)
             return pack("<B", type | 0x80) + pack("<B", flags)
 
-        try:
-            if object in simple_types:
-                rv += pack_type_and_flags(simple_types[object], flags)
-                return rv
-        except TypeError:
-            pass
+        if object is None: return rv + pack_type_and_flags(BinaryTypes.null, flags)
+        if object is True: return rv + pack_type_and_flags(BinaryTypes.boolean_true, flags)
+        if object is False: return rv + pack_type_and_flags(BinaryTypes.boolean_false, flags)
 
         if object_type in zeros_ones and object in zeros_ones[object_type]:
-            rv += pack_type_and_flags(zeros_ones[object_type][object], flags)
-            return rv
+            return rv + pack_type_and_flags(zeros_ones[object_type][object], flags)
 
         type_in_binary = None
         if object_type in types:
