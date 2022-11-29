@@ -2,7 +2,7 @@ import enum
 import array
 from typing import BinaryIO
 from struct import pack
-import keyvalues3 as kv3
+from . import keyvalues3 as kv3
 
 class BinaryTypes(enum.IntEnum):
     null = 1
@@ -99,7 +99,11 @@ class BinaryV1UncompressedWriter:
         elif isinstance(object, enum.IntEnum):
             type_in_binary = BinaryTypes.int32 if self.serialize_enums_as_ints else BinaryTypes.string
         else:
-            raise TypeError(f"Unknown type {object_type}")
+            if isinstance(object, list):
+                type_in_binary = BinaryTypes.array
+            else:
+                raise TypeError(f"Unknown type {object_type}")
+
         return pack_type_and_flags(type_in_binary, flags) + self.object_serialize(object)
 
     def object_serialize(self, object) -> bytearray:
