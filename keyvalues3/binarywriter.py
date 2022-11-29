@@ -55,7 +55,7 @@ class BinaryV1UncompressedWriter:
         # header
         data = bytearray(b"VKV\x03")
         data += kv3.binary.version.bytes
-        data += self.kv3file.format.version.bytes
+        data += self.kv3file.format.version.bytes_le
 
         # string table and object
         self.strings.clear()
@@ -71,25 +71,24 @@ class BinaryV1UncompressedWriter:
     def write(self, file: BinaryIO):
         file.write(bytes(self))
 
-    def object_and_type_serialize(self, object):
+    def object_and_type_serialize(self, object) -> bytes:
         flags = kv3.Flag(0)
         if isinstance(object, kv3.flagged_value):
             flags = object.flags
             object = object.value
         object_type = type(object)
-        rv = bytearray()
 
         def pack_type_and_flags(type: BinaryTypes, flags: kv3.Flag):
             if flags == kv3.Flag(0):
                 return pack("<B", type)
             return pack("<B", type | 0x80) + pack("<B", flags)
 
-        if object is None: return rv + pack_type_and_flags(BinaryTypes.null, flags)
-        if object is True: return rv + pack_type_and_flags(BinaryTypes.boolean_true, flags)
-        if object is False: return rv + pack_type_and_flags(BinaryTypes.boolean_false, flags)
+        if object is None: return pack_type_and_flags(BinaryTypes.null, flags)
+        if object is True: return pack_type_and_flags(BinaryTypes.boolean_true, flags)
+        if object is False: return pack_type_and_flags(BinaryTypes.boolean_false, flags)
 
         if object_type in zeros_ones and object in zeros_ones[object_type]:
-            return rv + pack_type_and_flags(zeros_ones[object_type][object], flags)
+            return pack_type_and_flags(zeros_ones[object_type][object], flags)
 
         type_in_binary = None
         if object_type in types:
@@ -98,11 +97,9 @@ class BinaryV1UncompressedWriter:
             type_in_binary = BinaryTypes.int32 if self.serialize_enums_as_ints else BinaryTypes.string
         else:
             raise TypeError(f"Unknown type {object_type}")
-        rv += pack_type_and_flags(type_in_binary, flags)
-        rv += self.object_serialize(object)
-        return rv
+        return pack_type_and_flags(type_in_binary, flags) + self.object_serialize(object)
 
-    def object_serialize(self, object):
+    def object_serialize(self, object) -> bytearray:
         rv = bytearray()
         match object:
             case bool():
