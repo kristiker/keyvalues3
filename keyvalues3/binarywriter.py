@@ -30,6 +30,8 @@ types = {
     str: BinaryTypes.string,
     list: BinaryTypes.array,
     array.array: BinaryTypes.array_typed,
+    bytes: BinaryTypes.binary_blob,
+    bytearray: BinaryTypes.binary_blob,
     dict: BinaryTypes.dictionary,
 }
 
@@ -124,12 +126,15 @@ class BinaryV1UncompressedWriter:
                 rv += pack("<i", len(object))
                 for item in object:
                     rv += self.object_and_type_serialize(item)
-            case array.array:
+            case array.array():
                 rv += pack("<i", len(object))
                 rv += pack("<B", BinaryTypes.int64)
                 rv += pack("<B", kv3.Flag(0).value)
                 for item in object:
                     rv += self.object_serialize(item)
+            case bytes() | bytearray():
+                rv += pack("<i", len(object))
+                rv += object
             case dict():
                 rv += pack("<i", len(object))
                 for key, value in object.items():
