@@ -7,6 +7,10 @@ from keyvalues3.textreader import KV3TextReader
 
 class TestBinaryV1UncompressedWriter(unittest.TestCase):
     
+    def test_empty_string_table(self):
+        writer = BinaryV1UncompressedWriter(None)
+        self.assertEqual(writer.encode_strings(), b'\x00\x00\x00\x00')
+
     def test_writes(self):
         with io.BytesIO() as file:
             writer = BinaryV1UncompressedWriter(KV3File({"A": 1}))

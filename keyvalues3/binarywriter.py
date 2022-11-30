@@ -52,21 +52,23 @@ class BinaryV1UncompressedWriter:
         self.strings: list[str] = []
 
     def __bytes__(self) -> bytes:
-        # header
-        data = bytearray(b"VKV\x03")
-        data += kv3.binary.version.bytes
-        data += self.kv3file.format.version.bytes_le
-
-        # string table and object
         self.strings.clear()
+        return bytes(self.encode_header() + self.encode_body())
+
+    def encode_header(self):
+        return b"VKV\x03" + kv3.binary.version.bytes + self.kv3file.format.version.bytes_le
+
+    def encode_body(self):
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
+        string_table = self.encode_strings()
+        return string_table + object_serialized
 
-        data += pack("<I", len(self.strings))
+    def encode_strings(self):
+        string_table = pack("<I", len(self.strings))
         for string in self.strings:
-            data += string.encode("utf-8")
-            data += b"\x00"
-
-        return bytes(data + object_serialized)
+            string_table += string.encode("utf-8")
+            string_table += b"\x00"
+        return string_table
 
     def write(self, file: BinaryIO):
         file.write(bytes(self))
