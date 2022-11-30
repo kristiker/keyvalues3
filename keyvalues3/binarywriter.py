@@ -143,8 +143,7 @@ class BinaryV1UncompressedWriter:
         return rv
 
 
-import lz4.frame
-
+import lz4.block
 class BinaryLZ4(BinaryV1UncompressedWriter):
     encoding = kv3.KV3_ENCODING_BINARY_BLOCK_LZ4
     def __bytes__(self):
@@ -152,8 +151,5 @@ class BinaryLZ4(BinaryV1UncompressedWriter):
         rv = self.encode_header()
         body_uncompressed = self.encode_body()
         rv += pack("<I", len(body_uncompressed))
-        with lz4.frame.LZ4FrameCompressor() as compressor:
-            rv += compressor.begin()
-            rv += compressor.compress(body_uncompressed)
-            rv += compressor.flush()
+        rv += lz4.block.compress(body_uncompressed, store_size=False)
         return rv
