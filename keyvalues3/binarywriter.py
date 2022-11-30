@@ -50,7 +50,7 @@ class BinaryV1UncompressedWriter:
         self.kv3file = kv3file
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
-        self.strings: list[str] = []
+        self.strings: dict[str, int] = {}
 
     def __bytes__(self) -> bytes:
         self.strings.clear()
@@ -115,19 +115,11 @@ class BinaryV1UncompressedWriter:
                 if self.serialize_enums_as_ints:
                     rv += pack("<i", object.value)
                 else:
-                    if object == "":
-                        rv += pack("<i", -1)
-                    else:
-                        rv += pack("<i", len(self.strings))
-                        self.strings.append(object)
+                    rv += pack("<i", self.register_string_to_table(object))
             case int(): rv += pack("<q", object)
             case float(): rv += pack("<d", object)
             case str():
-                if object == "":
-                    rv += pack("<i", -1)
-                else:
-                    rv += pack("<i", len(self.strings))
-                    self.strings.append(object)
+                rv += pack("<i", self.register_string_to_table(object))
             case list():
                 rv += pack("<i", len(object))
                 for item in object:
@@ -141,10 +133,14 @@ class BinaryV1UncompressedWriter:
             case dict():
                 rv += pack("<i", len(object))
                 for key, value in object.items():
-                    rv += pack("<i", len(self.strings))
-                    self.strings.append(key)
+                    rv += pack("<i", self.register_string_to_table(key))
                     rv += self.object_and_type_serialize(value)
         return rv
+
+    def register_string_to_table(self, object):
+        if object == "":
+            return -1
+        return self.strings.setdefault(object, len(self.strings))
 
 
 import lz4.block
