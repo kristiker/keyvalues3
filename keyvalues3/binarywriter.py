@@ -57,7 +57,7 @@ class BinaryV1UncompressedWriter:
         return bytes(self.encode_header() + self.encode_body())
 
     def encode_header(self):
-        return b"VKV\x03" + self.encoding.version.bytes + self.kv3file.format.version.bytes_le
+        return b"VKV\x03" + self.encoding.version.bytes_le + self.kv3file.format.version.bytes_le
 
     def encode_body(self):
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
