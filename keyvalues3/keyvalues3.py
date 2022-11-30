@@ -90,10 +90,13 @@ class Flag(enum.IntFlag):
     def __call__(self, value: kv3_types):
         return flagged_value(value, self)
 
-@dataclasses.dataclass(slots=True)
-class flagged_value:
-    value: kv3_types
-    flags: Flag = Flag(0)
+class flagged_value:    
+    __match_args__ = __slots__ = ("value", "flags")
+
+    def __init__(self, value: kv3_types, flags: Flag = Flag(0)):
+        assert isinstance(value, flagged_value) == False
+        self.value = value
+        self.flags = flags
 
     def __eq__(self, other):
         if isinstance(other, flagged_value):
