@@ -22,17 +22,17 @@ class Encoding(_HeaderPiece): pass
 class Format(_HeaderPiece): pass
 
 
-binary = Encoding("binary", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
-binary_block_compressed = Encoding("binarybc", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
-binary_block_lzma = Format("binarylzma", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
-text = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
+KV3_ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+KV3_ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+KV3_ENCODING_BINARY_BLOCK_LZ4 = Format("binarylz4", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+KV3_ENCODING_TEXT = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
 
-generic = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
+KV3_FORMAT_GENERIC = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
 
 @dataclasses.dataclass(frozen=True)
 class KV3Header:
-    encoding: Encoding = text
-    format: Format = generic
+    encoding: Encoding = KV3_ENCODING_TEXT
+    format: Format = KV3_FORMAT_GENERIC
     def __str__(self):
         return f"<!-- kv3 {self.encoding} {self.format} -->"
 
@@ -112,7 +112,7 @@ class Dataclass(Protocol):
 class KV3File:
     def __init__(self,
             value: kv3_types | Dataclass = None,
-            format: Format = generic,
+            format: Format = KV3_FORMAT_GENERIC,
             validate_value: bool = False,
             serialize_enums_as_ints: bool = False,
             ):
@@ -130,7 +130,7 @@ class KV3File:
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
     def __str__(self):
-        kv3 = str(KV3Header(encoding=text, format=self.format)) + "\n"
+        kv3 = str(KV3Header(encoding=KV3_ENCODING_TEXT, format=self.format)) + "\n"
         def object_serialize(object: kv3_types, indentation_level = 0, dictionary_object = False) -> str:
             indent = ("\t" * (indentation_level))
             indent_nested = ("\t" * (indentation_level + 1))

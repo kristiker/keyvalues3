@@ -45,6 +45,7 @@ zeros_ones = {
 }
 
 class BinaryV1UncompressedWriter:
+    encoding = kv3.KV3_ENCODING_BINARY_UNCOMPRESSED
     def __init__(self, kv3file: kv3.KV3File, serialize_enums_as_ints: bool = False):
         self.kv3file = kv3file
         self.serialize_enums_as_ints = serialize_enums_as_ints
@@ -56,7 +57,7 @@ class BinaryV1UncompressedWriter:
         return bytes(self.encode_header() + self.encode_body())
 
     def encode_header(self):
-        return b"VKV\x03" + kv3.binary.version.bytes + self.kv3file.format.version.bytes_le
+        return b"VKV\x03" + self.encoding.version.bytes + self.kv3file.format.version.bytes_le
 
     def encode_body(self):
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
@@ -139,4 +140,20 @@ class BinaryV1UncompressedWriter:
                     rv += pack("<i", len(self.strings))
                     self.strings.append(key)
                     rv += self.object_and_type_serialize(value)
+        return rv
+
+
+import lz4.frame
+
+class BinaryLZ4(BinaryV1UncompressedWriter):
+    encoding = kv3.KV3_ENCODING_BINARY_BLOCK_LZ4
+    def __bytes__(self):
+        self.strings.clear()
+        rv = self.encode_header()
+        body_uncompressed = self.encode_body()
+        rv += pack("<I", len(body_uncompressed))
+        with lz4.frame.LZ4FrameCompressor() as compressor:
+            rv += compressor.begin()
+            rv += compressor.compress(body_uncompressed)
+            rv += compressor.flush()
         return rv

@@ -2,7 +2,7 @@ import unittest
 import io
 
 from keyvalues3 import KV3File
-from keyvalues3.binarywriter import BinaryV1UncompressedWriter
+from keyvalues3.binarywriter import BinaryV1UncompressedWriter, BinaryLZ4
 from keyvalues3.textreader import KV3TextReader
 
 class TestBinaryV1UncompressedWriter(unittest.TestCase):
@@ -10,6 +10,9 @@ class TestBinaryV1UncompressedWriter(unittest.TestCase):
     def test_empty_string_table(self):
         writer = BinaryV1UncompressedWriter(None)
         self.assertEqual(writer.encode_strings(), b'\x00\x00\x00\x00')
+
+    def test_encodes(self):
+        bytes(BinaryV1UncompressedWriter(KV3File({"A": 1})))
 
     def test_writes(self):
         with io.BytesIO() as file:
@@ -46,3 +49,7 @@ class TestBinaryV1UncompressedWriter(unittest.TestCase):
             with io.BytesIO() as file:
                 writer = BinaryV1UncompressedWriter(kv3_obj)
                 writer.write(file)
+
+class TestBinaryLZ4:
+    def test_encodes(self):
+        bytes(BinaryLZ4(KV3File({"A": 1})))
