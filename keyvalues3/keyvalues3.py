@@ -22,9 +22,9 @@ class Encoding(_HeaderPiece): pass
 class Format(_HeaderPiece): pass
 
 
-KV3_ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
-KV3_ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
-KV3_ENCODING_BINARY_BLOCK_LZ4 = Format("binarylz4", UUID("0005861b-d8f7-c140-ad82-75a48267e714"))
+KV3_ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("1b860500-f7d8-40c1-ad82-75a48267e714"))
+KV3_ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("95791a46-95bc-4f6c-a70b-05bca1b7dfd2"))
+KV3_ENCODING_BINARY_BLOCK_LZ4 = Format("binarylz4", UUID("6847348a-63a1-4f5c-a197-53806fd9b119"))
 KV3_ENCODING_TEXT = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
 
 KV3_FORMAT_GENERIC = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
