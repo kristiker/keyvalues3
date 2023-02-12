@@ -4,6 +4,9 @@ from typing import BinaryIO
 from struct import pack
 import keyvalues3 as kv3
 
+class BinaryMagics(enum.Enum):
+    VKV3 = b"VKV\x03"
+
 class BinaryTypes(enum.IntEnum):
     null = 1
     boolean = 2
@@ -57,7 +60,7 @@ class BinaryV1UncompressedWriter:
         return bytes(self.encode_header() + self.encode_body())
 
     def encode_header(self):
-        return b"VKV\x03" + self.encoding.version.bytes_le + self.kv3file.format.version.bytes_le
+        return BinaryMagics.VKV3.value + self.encoding.version.bytes_le + self.kv3file.format.version.bytes_le
 
     def encode_body(self) -> bytes:
         object_serialized = self.object_and_type_serialize(self.kv3file.value)
@@ -103,44 +106,44 @@ class BinaryV1UncompressedWriter:
         return pack_type_and_flags(type_in_binary, flags) + self.object_serialize(object)
 
     def object_serialize(self, object) -> bytearray:
-        rv = bytearray()
+        blob = bytearray()
         match object:
             case bool():
                 ...
             case enum.IntEnum():
                 if self.serialize_enums_as_ints:
-                    rv += pack("<i", object.value)
+                    blob += pack("<i", object.value)
                 else:
                     if object == "":
-                        rv += pack("<i", -1)
+                        blob += pack("<i", -1)
                     else:
-                        rv += pack("<i", len(self.strings))
+                        blob += pack("<i", len(self.strings))
                         self.strings.append(object)
-            case int(): rv += pack("<q", object)
-            case float(): rv += pack("<d", object)
+            case int(): blob += pack("<q", object)
+            case float(): blob += pack("<d", object)
             case str():
                 if object == "":
-                    rv += pack("<i", -1)
+                    blob += pack("<i", -1)
                 else:
-                    rv += pack("<i", len(self.strings))
+                    blob += pack("<i", len(self.strings))
                     self.strings.append(object)
             case list():
-                rv += pack("<i", len(object))
+                blob += pack("<i", len(object))
                 for item in object:
-                    rv += self.object_and_type_serialize(item)
+                    blob += self.object_and_type_serialize(item)
             case array.array:
-                rv += pack("<i", len(object))
-                rv += pack("<B", BinaryTypes.int64)
-                rv += pack("<B", kv3.Flag(0).value)
+                blob += pack("<i", len(object))
+                blob += pack("<B", BinaryTypes.int64)
+                blob += pack("<B", kv3.Flag(0).value)
                 for item in object:
-                    rv += self.object_serialize(item)
+                    blob += self.object_serialize(item)
             case dict():
-                rv += pack("<i", len(object))
+                blob += pack("<i", len(object))
                 for key, value in object.items():
-                    rv += pack("<i", len(self.strings))
+                    blob += pack("<i", len(self.strings))
                     self.strings.append(key)
-                    rv += self.object_and_type_serialize(value)
-        return rv
+                    blob += self.object_and_type_serialize(value)
+        return blob
 
 
 import lz4.block
@@ -148,8 +151,8 @@ class BinaryLZ4(BinaryV1UncompressedWriter):
     encoding = kv3.KV3_ENCODING_BINARY_BLOCK_LZ4
     def __bytes__(self):
         self.strings.clear()
-        rv = self.encode_header()
+        blob = self.encode_header()
         body_uncompressed = self.encode_body()
-        rv += pack("<I", len(body_uncompressed))
-        rv += lz4.block.compress(body_uncompressed, store_size=False)
-        return rv
+        blob += pack("<I", len(body_uncompressed))
+        blob += lz4.block.compress(body_uncompressed, store_size=False)
+        return blob
