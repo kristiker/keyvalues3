@@ -5,8 +5,8 @@ KeyValues3 is a Valve developed data format. It is similar in structure to JSON,
 Copy the code. Todo: pip
 
 ## Supported encodings
-| Encoding | Read 📖 | Write ✍️ |
-| -------- | :-----: | :-------: |
+| Encoding 👩‍💻 | Read 📖 | Write ✍️ |
+| ----------- | :-----: | :-------: |
 | Text UTF-8 | Yes ✔️ | Yes ✔️ |
 | Binary Uncompressed | No ⛔ | Yes ✔️ |
 | Binary LZ4 | No ⛔ | Yes ✔️ |
