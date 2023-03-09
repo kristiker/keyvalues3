@@ -8,6 +8,7 @@ Copy the code. Todo: pip
 | Encoding 👩‍💻 | Read 📖 | Write ✍️ |
 | ----------- | :-----: | :-------: |
 | Text UTF-8 | Yes ✔️ | Yes ✔️ |
+| Text UTF-8 Headerless | No ⛔ | No ⛔ |
 | Binary Uncompressed | No ⛔ | Yes ✔️ |
 | Binary LZ4 | No ⛔ | Yes ✔️ |
 | Binary (Other newer) | No ⛔ | No ⛔ |
