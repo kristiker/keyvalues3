@@ -12,3 +12,7 @@ Copy the code. Todo: pip
 | Binary Uncompressed | No ⛔ | Yes ✔️ |
 | Binary LZ4 | No ⛔ | Yes ✔️ |
 | Binary (Other newer) | No ⛔ | No ⛔ |
+
+## Credits
+Valve Corporation for making KeyValues3.  
+[SteamDatabase/ValveResourceFormat](https://github.com/SteamDatabase/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/ResourceTypes/BinaryKV3.cs) for reversing the binary formats.
