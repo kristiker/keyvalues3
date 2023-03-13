@@ -2,17 +2,19 @@ import unittest
 
 import keyvalues3 as kv3
 from keyvalues3.textreader import KV3TextReader, kv3grammar
+import keyvalues3.textwriter as kv3textwriter
+
+default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
 
 class Test_TextReading(unittest.TestCase):
-    default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
 
     def test_parses_null_kv3(self):
-        kv3Nodes = kv3grammar.parse(self.default_header + "null")
+        kv3Nodes = kv3grammar.parse(default_header + "null")
         value = KV3TextReader().visit(kv3Nodes)
         self.assertIsNone(value.value)
     
     def test_parses_crlf_header(self):
-        value = KV3TextReader().parse(self.default_header.strip() + "\r\n" + "null")
+        value = KV3TextReader().parse(default_header.strip() + "\r\n" + "null")
         self.assertIsNone(value.value)
 
     def test_parses_bt_config(self):
@@ -31,8 +33,54 @@ class Test_TextReading(unittest.TestCase):
             self.assertEqual(kv["emptyMultiLineString"].value, "")
             self.assertEqual(kv["emptyMultiLineString"].flags, kv3.Flag.multilinestring)
 
-    def test_prints_back_same_kv3(self):
-        kv3text = self.default_header + """
+    def testflagged_value_base(self):
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "resource:null").value,
+            kv3.flagged_value(value=None, flags=kv3.Flag.resource)
+        )
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "resource_name:{a=2}").value,
+            kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resource_name)
+        )
+    
+    def testflagged_value_multi(self):
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "resource|subclass:null").value,
+            kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
+        )
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "subclass|resource:null").value,
+            kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
+        )
+    
+    def test_binary_blob_reading(self):
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "#[00 01 02 03]").value,
+            bytes(b"\x00\x01\x02\x03")
+        )
+        self.assertEqual(
+            KV3TextReader().parse(default_header + "#[DEADBEEF]").value,
+            bytes(b"\xDE\xAD\xBE\xEF")
+        )
+    
+    def test_multiline_strngs(self):
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '""""""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '""" """')
+        #with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""\r"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""a\n"""')
+        with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""a\n\n"""')
+
+        assert KV3TextReader().parse(default_header + '"""\n"""').value == ""
+        assert KV3TextReader().parse(default_header + '"""\r\n"""').value == ""
+        assert KV3TextReader().parse(default_header + '"""\na"""').value == "a"
+        assert KV3TextReader().parse(default_header + '"""\na\n"""').value == "a\n"
+
+
+class Test_TextReadWriting(unittest.TestCase):
+    kv3text = """
 {
     boolValue = false
     intValue = 128
@@ -49,55 +97,17 @@ class Test_TextReading(unittest.TestCase):
         s = "foo"
     }
 }""".strip().replace(" "*4, "\t")
-        value = KV3TextReader().parse(kv3text)
-        self.assertEqual(kv3text, str(value))
-
-    def testflagged_value_base(self):
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "resource:null").value,
-            kv3.flagged_value(value=None, flags=kv3.Flag.resource)
-        )
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "resource_name:{a=2}").value,
-            kv3.flagged_value(value={"a":2}, flags=kv3.Flag.resource_name)
-        )
     
-    def testflagged_value_multi(self):
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "resource|subclass:null").value,
-            kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
-        )
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "subclass|resource:null").value,
-            kv3.flagged_value(value=None, flags=kv3.Flag.resource|kv3.Flag.subclass)
-        )
-    
-    def test_binary_blob_reading(self):
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "#[00 01 02 03]").value,
-            bytes(b"\x00\x01\x02\x03")
-        )
-        self.assertEqual(
-            KV3TextReader().parse(self.default_header + "#[DEADBEEF]").value,
-            bytes(b"\xDE\xAD\xBE\xEF")
-        )
-    
-    def test_multiline_strngs(self):
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""""""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '""" """')
-        #with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""\r"""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""a\n"""')
-        with self.assertRaises(Exception): KV3TextReader().parse(self.default_header + '"""a\n\n"""')
+    def test_prints_back_same_kv3_header(self):
+        value = KV3TextReader().parse(default_header + self.kv3text)
+        self.assertEqual(default_header + self.kv3text, kv3textwriter.write(value))
 
-        assert KV3TextReader().parse(self.default_header + '"""\n"""').value == ""
-        assert KV3TextReader().parse(self.default_header + '"""\r\n"""').value == ""
-        assert KV3TextReader().parse(self.default_header + '"""\na"""').value == "a"
-        assert KV3TextReader().parse(self.default_header + '"""\na\n"""').value == "a\n"
+    @unittest.skip("TODO: implement this")
+    def test_prints_back_same_kv3_no_header(self):
+        value = KV3TextReader().parse(self.kv3text)
+        self.assertEqual(self.kv3text, kv3textwriter.write(value, kv3textwriter.TextWriterOptions(no_header=True)))
 
-        
+
 
 import pytest
 from pathlib import Path

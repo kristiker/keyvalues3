@@ -90,7 +90,7 @@ class Flag(enum.IntFlag):
     def __call__(self, value: kv3_types):
         return flagged_value(value, self)
 
-class flagged_value:    
+class flagged_value:
     __match_args__ = __slots__ = ("value", "flags")
 
     def __init__(self, value: kv3_types, flags: Flag = Flag(0)):
@@ -132,66 +132,15 @@ class KV3File:
 
         self.serialize_enums_as_ints = serialize_enums_as_ints
 
-    def __str__(self):
-        kv3 = str(KV3Header(encoding=KV3_ENCODING_TEXT, format=self.format)) + "\n"
-        def object_serialize(object: kv3_types, indentation_level = 0, dictionary_object = False) -> str:
-            indent = ("\t" * (indentation_level))
-            indent_nested = ("\t" * (indentation_level + 1))
-            match object:
-                case flagged_value(value, flags):
-                    if flags & Flag.multilinestring:
-                        return  f'"""\n{value}"""'
-                    if flags:
-                        return f"{flags}:{object_serialize(value)}"
-                    return object_serialize(value)
-                case None:
-                    return "null"
-                case False:
-                    return "false"
-                case True:
-                    return "true"
-                case int():
-                    return str(object)
-                case float():
-                    return str(round(object, 6))
-                case enum.IntEnum():
-                    if self.serialize_enums_as_ints:
-                        return str(object.value)
-                    return object.name
-                case str():
-                    return '"' + object + '"'
-                case list():
-                    qualifies_for_sameline = len(object) <= 4 and all(isinstance(item, (dict)) == False for item in object)
-                    if qualifies_for_sameline:
-                        return "[" + ", ".join(object_serialize(item) for item in object) + "]"
-                    s = f"\n{indent}[\n"
-                    for item in object:
-                        s += indent_nested + (object_serialize(item, indentation_level+1) + ",\n")
-                    return s + indent + "]"
-                case dict():
-                    s = indent + "{\n"
-                    if dictionary_object:
-                        s = "\n" + s
-                    for key, value in object.items():
-                        s += indent_nested + f"{key} = {object_serialize(value, indentation_level+1, dictionary_object=True)}\n"
-                    return s + indent + "}"
-                case array.array():
-                    return "[ ]" # TODO
-                case bytes() | bytearray():
-                    return f"#[{' '.join(f'{b:02x}' for b in object)}]"
-                case _:
-                    raise TypeError(f"Invalid type {type(object)} for KV3 value.")
+    #def __str__(self):
+    #    return write_text()
 
-        kv3 += object_serialize(self.value)
-
-        return kv3
-
-    def ToString(self): return self.__str__()
+    #def ToString(self): return self.__str__()
 
     #def __bytes__(self):
     #    return bytes(BinaryV1UncompressedWriter(self))
 
-    def ToBytes(self): return self.__bytes__()
+    #def ToBytes(self): return self.__bytes__()
 
     #@classmethod
     #def from_string(cls, string: str):

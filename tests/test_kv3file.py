@@ -3,7 +3,7 @@ import unittest
 import enum
 import dataclasses
 import uuid
-from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid
+from keyvalues3 import KV3File, KV3Header, Encoding, Format, Flag, flagged_value, is_valid, check_valid, textwriter
 
 class Test_KV3File(unittest.TestCase):
     default_header = '<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->'
@@ -21,8 +21,12 @@ class Test_KV3File(unittest.TestCase):
 
     def test_empty_instantiated_kv3file(self):
         self.assertEqual(
-            KV3File().ToString(),
+            textwriter.write(KV3File()),
             self.default_header + "\nnull"
+        )
+        self.assertEqual(
+            textwriter.write(KV3File(), textwriter.TextWriterOptions(no_header=True)),
+            "null"
         )
 
     def test_dataclass_instantiated_kv3file(self):
@@ -32,7 +36,7 @@ class Test_KV3File(unittest.TestCase):
             b: dict = dataclasses.field(default_factory=lambda: {"inner_b":3})
             c: list = dataclasses.field(default_factory=lambda: ["listed_text1", "listed_text2"])
         self.assertEqual(
-            KV3File(MyKV3Format()).ToString(),
+            textwriter.write_text(KV3File(MyKV3Format())),
             self.default_header + "\n" + """
             {
                 a = "asd asd"
@@ -49,14 +53,14 @@ class Test_KV3File(unittest.TestCase):
 
     def test_dict_instantiated_kv3file(self):
         self.assertEqual(
-            KV3File({
+            textwriter.write_text(KV3File({
                 'a': 'asd asd',
                 'b': {
                     "inner_b": 3
                 },
                 'c': ["listed_text1", "listed_text2"]
             }
-            ).ToString(),
+            )),
             self.default_header + "\n" + """
             {
                 a = "asd asd"
@@ -129,17 +133,17 @@ class Test_KV3Value(unittest.TestCase):
         self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(5, Flag.resource | Flag.resource_name))
 
     def test_value_serializes(self):
-        KV3File(value=None).ToString()
-        KV3File(value=True).ToString()
-        KV3File(value=False).ToString()
-        KV3File(value=1).ToString()
-        KV3File(value=1.0).ToString()
-        KV3File(value=self.MyKV3Format.Substance.FIRE).ToString()
-        KV3File(value=str()).ToString()
-        KV3File(value=flagged_value(str(), Flag.multilinestring)).ToString()
-        KV3File(value=flagged_value(str(), Flag.resource)).ToString()
-        KV3File(value=[]).ToString()
-        KV3File(value={}).ToString()
-        KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format).ToString()
-        KV3File(value=bytes(byte for byte in range(256))).ToString()
-        KV3File(value=bytearray(byte for byte in range(256))).ToString()
+        textwriter.write_text(KV3File(value=None))
+        textwriter.write_text(KV3File(value=True))
+        textwriter.write_text(KV3File(value=False))
+        textwriter.write_text(KV3File(value=1))
+        textwriter.write_text(KV3File(value=1.0))
+        textwriter.write_text(KV3File(value=self.MyKV3Format.Substance.FIRE))
+        textwriter.write_text(KV3File(value=str()))
+        textwriter.write_text(KV3File(value=flagged_value(str(), Flag.multilinestring)))
+        textwriter.write_text(KV3File(value=flagged_value(str(), Flag.resource)))
+        textwriter.write_text(KV3File(value=[]))
+        textwriter.write_text(KV3File(value={}))
+        textwriter.write_text(KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format))
+        textwriter.write_text(KV3File(value=bytes(byte for byte in range(256))))
+        textwriter.write_text(KV3File(value=bytearray(byte for byte in range(256))))

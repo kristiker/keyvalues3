@@ -46,19 +46,19 @@ class KV3TextReader(parsimonious.NodeVisitor):
     class NonObject(object):
         def __bool__(self):
             return False
-    
+
     non_object = NonObject()
-    
+
     def parse(self, text: str) -> kv3.KV3File:
         """Parse the given text into a KV3File object."""
         return super().parse(text)
-    
+
     loads = parse
     read = parse
 
     def visit(self, node) -> kv3.KV3File:
         return super().visit(node)
-    
+
     @staticmethod
     def is_object(node):
         return node is not KV3TextReader.non_object and not isinstance(node, KV3TextReader.list_of_nodes)
@@ -76,7 +76,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     def visit_header(self, _, visited_children) -> kv3.KV3Header:
         return kv3.KV3Header(encoding=visited_children[4], format=visited_children[6])
-    
+
     def visit_encoding(self, _, visited_children) -> kv3.Encoding:
         return kv3.Encoding(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
     def visit_format(self, _, visited_children) -> kv3.Format:
@@ -87,10 +87,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     def visit_object(self, _, visited_children) -> kv3.kv3_types:
         return visited_children[0]
-    
+
     def visit_object_flagged(self, _, visited_children) -> kv3.flagged_value:
         return kv3.flagged_value(value=visited_children[1], flags=visited_children[0][0])
-    
+
     def visit_flags(self, _, visited_children) -> kv3.Flag:
         flag = kv3.Flag(0)
         try:
@@ -100,7 +100,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return flag | kv3.Flag[visited_children[1].text.lower()]
         except KeyError as e:
             raise ValueError(f"Invalid flag {e.args[0]!r}") from e
-    
+
     def visit_null(self, *_): return None
     def visit_true(self, *_): return True
     def visit_false(self, *_): return False
@@ -124,10 +124,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_multiline_string(self, node, _):
         return kv3.flagged_value(node.match.group(1), kv3.Flag.multilinestring)
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
-    
+
     def visit_array(self, node, visited_children) -> list:
         return visited_children[1]
-    
+
     def visit_items(self, node, visited_children) -> list:
         rv = []
         items_comma = visited_children[0] if isinstance(visited_children[0], KV3TextReader.list_of_nodes) else []
@@ -138,7 +138,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             it = (item for item in child if self.is_object(item))
             rv.append(next(it))
         return rv
-    
+
     def visit_binary_blob(self, node, _) -> bytearray:
         return bytearray.fromhex(node.children[2].text)
 
@@ -147,11 +147,11 @@ class KV3TextReader(parsimonious.NodeVisitor):
         for kvp in visited_children[1]:
             rv[kvp[0]] = kvp[1]
         return rv
-    
+
     def visit_pair(self, node, visited_children) -> tuple[str, None | object | kv3.flagged_value]:
         it = (child for child in visited_children if self.is_object(child))
         return next(it), next(it)
-    
+
     def visit_key(self, node, _) -> str:
         return node.text
 
