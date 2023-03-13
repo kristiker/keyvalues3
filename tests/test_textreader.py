@@ -1,7 +1,7 @@
 import unittest
 
 import keyvalues3 as kv3
-from keyvalues3.textreader import KV3TextReader, kv3grammar
+from keyvalues3.textreader import KV3TextReader, KV3TextReaderNoHeader, kv3grammar
 import keyvalues3.textwriter as kv3textwriter
 
 default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
@@ -32,6 +32,11 @@ class Test_TextReading(unittest.TestCase):
             self.assertIsInstance(kv["emptyMultiLineString"], kv3.flagged_value)
             self.assertEqual(kv["emptyMultiLineString"].value, "")
             self.assertEqual(kv["emptyMultiLineString"].flags, kv3.Flag.multilinestring)
+
+    def test_parses_example_kv3_no_header(self):
+        with open("tests/documents/example_noheader.kv3", "r", encoding="utf-8") as f:
+            kv = KV3TextReaderNoHeader().parse(f.read())
+            self.assertEqual(kv["foo"], "bar")
 
     def testflagged_value_base(self):
         self.assertEqual(
@@ -102,9 +107,8 @@ class Test_TextReadWriting(unittest.TestCase):
         value = KV3TextReader().parse(default_header + self.kv3text)
         self.assertEqual(default_header + self.kv3text, kv3textwriter.write(value))
 
-    @unittest.skip("TODO: implement this")
     def test_prints_back_same_kv3_no_header(self):
-        value = KV3TextReader().parse(self.kv3text)
+        value = KV3TextReaderNoHeader().parse(self.kv3text)
         self.assertEqual(self.kv3text, kv3textwriter.write(value, kv3textwriter.TextWriterOptions(no_header=True)))
 
 
@@ -136,25 +140,28 @@ vpfc_files = []
 
 for kv3file in Path("tests/documents").glob('*.kv3'):
     assumed_valid = False if kv3file.stem == "not_kv3" else True
-    kv3_files.append((kv3file, assumed_valid))
+    no_header = True if "noheader" in kv3file.stem else False
+    parameters = (kv3file, assumed_valid, no_header)
+    kv3_files.append(parameters)
     if resourcecompiler.is_file():
         vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
         shutil.copy(kv3file, vpcf_to_compile)
-        vpfc_files.append((vpcf_to_compile, assumed_valid))
+        vpfc_files.append(parameters)
 
 @pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
-@pytest.mark.parametrize("file,assumed_valid", kv3_files, ids=[f"'{f.name}'-{v}" for f, v in kv3_files])
-def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool):
+@pytest.mark.parametrize("file,assumed_valid,no_header", kv3_files, ids=[f"'{f.name}'-{v}" for f, v, n in kv3_files])
+def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool, no_header: bool):
     with open(file, "r") as f:
+        reader = KV3TextReaderNoHeader() if no_header else KV3TextReader()
         if assumed_valid:
-            KV3TextReader().parse(f.read())
+            reader.parse(f.read())
             return
         with pytest.raises(Exception):
-            KV3TextReader().parse(f.read())
+            reader.parse(f.read())
 
 @pytest.mark.skipif(resourcecompiler.is_file() == False, reason="resourcecompiler not available")
-@pytest.mark.parametrize("file,assumed_valid", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
-def test_parity(file: Path, assumed_valid: bool):
+@pytest.mark.parametrize("file,assumed_valid,no_header", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
+def test_parity(file: Path, assumed_valid: bool, no_header: bool):
     """Check parity with resourcecompiler"""
     result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 

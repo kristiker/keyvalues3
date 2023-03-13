@@ -63,9 +63,9 @@ class BinaryV1UncompressedWriter:
         return BinaryMagics.VKV3.value + self.encoding.version.bytes_le + self.kv3file.format.version.bytes_le
 
     def encode_body(self) -> bytes:
-        object_serialized = self.object_and_type_serialize(self.kv3file.value)
+        value_serialized = self.value_and_type_serialize(self.kv3file.value)
         string_table = self.encode_strings()
-        return string_table + object_serialized + b"\xFF\xFF\xFF\xFF"
+        return string_table + value_serialized + b"\xFF\xFF\xFF\xFF"
 
     def encode_strings(self):
         string_table = pack("<I", len(self.strings))
@@ -77,72 +77,72 @@ class BinaryV1UncompressedWriter:
     def write(self, file: BinaryIO):
         file.write(bytes(self))
 
-    def object_and_type_serialize(self, object) -> bytes:
+    def value_and_type_serialize(self, value) -> bytes:
         flags = kv3.Flag(0)
-        if isinstance(object, kv3.flagged_value):
-            flags = object.flags
-            object = object.value
-        object_type = type(object)
+        if isinstance(value, kv3.flagged_value):
+            flags = value.flags
+            value = value.value
+        value_type = type(value)
 
         def pack_type_and_flags(type: BinaryTypes, flags: kv3.Flag):
             if flags == kv3.Flag(0):
                 return pack("<B", type)
             return pack("<B", type | 0x80) + pack("<B", flags)
 
-        if object is None: return pack_type_and_flags(BinaryTypes.null, flags)
-        if object is True: return pack_type_and_flags(BinaryTypes.boolean_true, flags)
-        if object is False: return pack_type_and_flags(BinaryTypes.boolean_false, flags)
+        if value is None: return pack_type_and_flags(BinaryTypes.null, flags)
+        if value is True: return pack_type_and_flags(BinaryTypes.boolean_true, flags)
+        if value is False: return pack_type_and_flags(BinaryTypes.boolean_false, flags)
 
-        if object_type in zeros_ones and object in zeros_ones[object_type]:
-            return pack_type_and_flags(zeros_ones[object_type][object], flags)
+        if value_type in zeros_ones and value in zeros_ones[value_type]:
+            return pack_type_and_flags(zeros_ones[value_type][value], flags)
 
         type_in_binary = None
-        if object_type in types:
-            type_in_binary = types[object_type]
-        elif isinstance(object, enum.IntEnum):
+        if value_type in types:
+            type_in_binary = types[value_type]
+        elif isinstance(value, enum.IntEnum):
             type_in_binary = BinaryTypes.int32 if self.serialize_enums_as_ints else BinaryTypes.string
         else:
-            raise TypeError(f"Unknown type {object_type}")
-        return pack_type_and_flags(type_in_binary, flags) + self.object_serialize(object)
+            raise TypeError(f"Unknown type {value_type}")
+        return pack_type_and_flags(type_in_binary, flags) + self.value_serialize(value)
 
-    def object_serialize(self, object) -> bytearray:
+    def value_serialize(self, value) -> bytearray:
         blob = bytearray()
-        match object:
+        match value:
             case bool():
                 ...
             case enum.IntEnum():
                 if self.serialize_enums_as_ints:
-                    blob += pack("<i", object.value)
+                    blob += pack("<i", value.value)
                 else:
-                    if object == "":
+                    if value == "":
                         blob += pack("<i", -1)
                     else:
                         blob += pack("<i", len(self.strings))
-                        self.strings.append(object)
-            case int(): blob += pack("<q", object)
-            case float(): blob += pack("<d", object)
+                        self.strings.append(value)
+            case int(): blob += pack("<q", value)
+            case float(): blob += pack("<d", value)
             case str():
-                if object == "":
+                if value == "":
                     blob += pack("<i", -1)
                 else:
                     blob += pack("<i", len(self.strings))
-                    self.strings.append(object)
+                    self.strings.append(value)
             case list():
-                blob += pack("<i", len(object))
-                for item in object:
-                    blob += self.object_and_type_serialize(item)
+                blob += pack("<i", len(value))
+                for item in value:
+                    blob += self.value_and_type_serialize(item)
             case array.array:
-                blob += pack("<i", len(object))
+                blob += pack("<i", len(value))
                 blob += pack("<B", BinaryTypes.int64)
                 blob += pack("<B", kv3.Flag(0).value)
-                for item in object:
-                    blob += self.object_serialize(item)
+                for item in value:
+                    blob += self.value_serialize(item)
             case dict():
-                blob += pack("<i", len(object))
-                for key, value in object.items():
+                blob += pack("<i", len(value))
+                for key, value in value.items():
                     blob += pack("<i", len(self.strings))
                     self.strings.append(key)
-                    blob += self.object_and_type_serialize(value)
+                    blob += self.value_and_type_serialize(value)
         return blob
 
 

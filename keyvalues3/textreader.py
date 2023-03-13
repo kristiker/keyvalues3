@@ -3,15 +3,8 @@ import keyvalues3 as kv3
 import uuid
 import itertools
 
-kv3grammar = parsimonious.Grammar(
-    """
-    kv3 = header ws* data ws* # TODO: null needs whitespace after header but object doesnt
-    header = "<!--" ws+ "kv3" ws+ encoding ws+ format ws+ "-->"
-        encoding = "encoding:" identifier ":version" guid
-        format = "format:" identifier ":version" guid
-            guid = ~r"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
-
-    data = (object / object_flagged)
+common = """
+    data = (value / value_flagged)
 
     array = "[" items "]"
         items = (ws* data ws* ",")* ws* (data ws*)?
@@ -19,9 +12,9 @@ kv3grammar = parsimonious.Grammar(
         pair = ws* key ws* "=" ws* data ws*
             key = (identifier / string)
 
-    object_flagged = (flags ":") object
+    value_flagged = (flags ":") value
         flags = (identifier "|")* identifier
-    object = null / true / false / number / multiline_string / string / dict / array / binary_blob
+    value = null / true / false / number / multiline_string / string / dict / array / binary_blob
         null = "null"
         true = "true"
         false = "false"
@@ -36,6 +29,21 @@ kv3grammar = parsimonious.Grammar(
 
     identifier = ~r"[a-zA-Z0-9_]+"i
     """
+
+kv3grammar = parsimonious.Grammar(
+    """
+    kv3 = header ws* data ws* # TODO: null needs whitespace after header but object doesnt
+    header = "<!--" ws+ "kv3" ws+ encoding ws+ format ws+ "-->"
+        encoding = "encoding:" identifier ":version" guid
+        format = "format:" identifier ":version" guid
+            guid = ~r"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
+    """ + common
+)
+
+kv3grammar_noheader = parsimonious.Grammar(
+    """
+    kv3_noheader = ws* data ws*
+    """ + common
 )
 
 class KV3TextReader(parsimonious.NodeVisitor):
@@ -85,10 +93,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_data(self, node, visited_children) -> kv3.kv3_types:
         return visited_children[0]
 
-    def visit_object(self, _, visited_children) -> kv3.kv3_types:
+    def visit_value(self, _, visited_children) -> kv3.kv3_types:
         return visited_children[0]
 
-    def visit_object_flagged(self, _, visited_children) -> kv3.flagged_value:
+    def visit_value_flagged(self, _, visited_children) -> kv3.flagged_value:
         return kv3.flagged_value(value=visited_children[1], flags=visited_children[0][0])
 
     def visit_flags(self, _, visited_children) -> kv3.Flag:
@@ -162,3 +170,13 @@ class KV3TextReader(parsimonious.NodeVisitor):
         if len(visited_children):
             return KV3TextReader.list_of_nodes(visited_children)
         return node if node.expr_name else KV3TextReader.non_object
+
+class KV3TextReaderNoHeader(KV3TextReader):
+    grammar = kv3grammar_noheader
+    def visit_kv3_noheader(self, node, visited_children: list[kv3.kv3_types]) -> kv3.kv3_types:
+        try:
+            data = next(data for data in visited_children if self.is_object(data))
+        except StopIteration:
+            raise ValueError("kv3 contains no data")
+        else:
+            return data

@@ -26,16 +26,16 @@ def write(kv3file: kv3.KV3File | kv3.kv3_types, options: TextWriterOptions = Tex
     if not options.no_header:
         text += str(kv3.KV3Header(encoding=encoding, format=format)) + "\n"
 
-    def object_serialize(object: kv3.kv3_types, indentation_level = 0, dictionary_object = False) -> str:
+    def value_serialize(value: kv3.kv3_types, indentation_level = 0, dictionary_value = False) -> str:
         indent = ("\t" * (indentation_level))
         indent_nested = ("\t" * (indentation_level + 1))
-        match object:
+        match value:
             case kv3.flagged_value(value, flags):
                 if flags & kv3.Flag.multilinestring:
                     return  f'"""\n{value}"""'
                 if flags:
-                    return f"{flags}:{object_serialize(value)}"
-                return object_serialize(value)
+                    return f"{flags}:{value_serialize(value)}"
+                return value_serialize(value)
             case None:
                 return "null"
             case False:
@@ -43,36 +43,36 @@ def write(kv3file: kv3.KV3File | kv3.kv3_types, options: TextWriterOptions = Tex
             case True:
                 return "true"
             case int():
-                return str(object)
+                return str(value)
             case float():
-                return str(round(object, 6))
+                return str(round(value, 6))
             case enum.IntEnum():
                 if options.serialize_enums_as_ints:
-                    return str(object.value)
-                return object.name
+                    return str(value.value)
+                return value.name
             case str():
-                return '"' + object + '"'
+                return '"' + value + '"'
             case list():
-                qualifies_for_sameline = len(object) <= 4 and all(isinstance(item, (dict)) == False for item in object)
+                qualifies_for_sameline = len(value) <= 4 and all(isinstance(item, (dict)) == False for item in value)
                 if qualifies_for_sameline:
-                    return "[" + ", ".join(object_serialize(item) for item in object) + "]"
+                    return "[" + ", ".join(value_serialize(item) for item in value) + "]"
                 s = f"\n{indent}[\n"
-                for item in object:
-                    s += indent_nested + (object_serialize(item, indentation_level+1) + ",\n")
+                for item in value:
+                    s += indent_nested + (value_serialize(item, indentation_level+1) + ",\n")
                 return s + indent + "]"
             case dict():
                 s = indent + "{\n"
-                if dictionary_object:
+                if dictionary_value:
                     s = "\n" + s
-                for key, value in object.items():
-                    s += indent_nested + f"{key} = {object_serialize(value, indentation_level+1, dictionary_object=True)}\n"
+                for key, value in value.items():
+                    s += indent_nested + f"{key} = {value_serialize(value, indentation_level+1, dictionary_value=True)}\n"
                 return s + indent + "}"
             case array.array():
                 return "[ ]" # TODO
             case bytes() | bytearray():
-                return f"#[{' '.join(f'{b:02x}' for b in object)}]"
+                return f"#[{' '.join(f'{b:02x}' for b in value)}]"
             case _:
-                raise TypeError(f"Invalid type {type(object)} for KV3 value.")
+                raise TypeError(f"Invalid type {type(value)} for KV3 value.")
 
-    text += object_serialize(value)
+    text += value_serialize(value)
     return text
