@@ -116,8 +116,7 @@ class KV3File:
     def __init__(self,
             value: kv3_types | Dataclass = None,
             format: Format = KV3_FORMAT_GENERIC,
-            validate_value: bool = False,
-            serialize_enums_as_ints: bool = False,
+            validate_value: bool = True,
             ):
 
         self.format = format
@@ -129,8 +128,6 @@ class KV3File:
 
         if validate_value:
             check_valid(self.value)
-
-        self.serialize_enums_as_ints = serialize_enums_as_ints
 
     #def __str__(self):
     #    return write_text()

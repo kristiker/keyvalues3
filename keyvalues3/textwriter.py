@@ -3,16 +3,13 @@ import array
 import enum
 import keyvalues3 as kv3
 
-class TextWriterOptions:
+class KV3EncoderOptions:
     def __init__(self, serialize_enums_as_ints: bool = False, no_header: bool = False):
         self.serialize_enums_as_ints = serialize_enums_as_ints
         self.no_header = no_header
 
-def write_text(value: kv3.KV3File | kv3.kv3_types, options: TextWriterOptions = TextWriterOptions()) -> str:
-    return write(value, options)
-
-def write(kv3file: kv3.KV3File | kv3.kv3_types, options: TextWriterOptions = TextWriterOptions()) -> str:
-    """Write a KV3File or value to UTF-8 Text."""
+def encode(kv3file: kv3.KV3File | kv3.kv3_types, options=KV3EncoderOptions()) -> str:
+    """Encode a KV3File or value to UTF-8 Text."""
 
     encoding = kv3.KV3_ENCODING_TEXT
     format = kv3.KV3_FORMAT_GENERIC

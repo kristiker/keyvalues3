@@ -1,6 +1,6 @@
 import enum
 import array
-from typing import BinaryIO
+import typing
 from struct import pack
 import keyvalues3 as kv3
 
@@ -74,7 +74,7 @@ class BinaryV1UncompressedWriter:
             string_table += b"\x00"
         return string_table
 
-    def write(self, file: BinaryIO):
+    def write(self, file: typing.BinaryIO):
         file.write(bytes(self))
 
     def value_and_type_serialize(self, value) -> bytes:

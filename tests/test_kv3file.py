@@ -21,11 +21,11 @@ class Test_KV3File(unittest.TestCase):
 
     def test_empty_instantiated_kv3file(self):
         self.assertEqual(
-            textwriter.write(KV3File()),
+            textwriter.encode(KV3File()),
             self.default_header + "\nnull"
         )
         self.assertEqual(
-            textwriter.write(KV3File(), textwriter.TextWriterOptions(no_header=True)),
+            textwriter.encode(KV3File(), textwriter.KV3EncoderOptions(no_header=True)),
             "null"
         )
 
@@ -36,7 +36,7 @@ class Test_KV3File(unittest.TestCase):
             b: dict = dataclasses.field(default_factory=lambda: {"inner_b":3})
             c: list = dataclasses.field(default_factory=lambda: ["listed_text1", "listed_text2"])
         self.assertEqual(
-            textwriter.write_text(KV3File(MyKV3Format())),
+            textwriter.encode(KV3File(MyKV3Format())),
             self.default_header + "\n" + """
             {
                 a = "asd asd"
@@ -53,7 +53,7 @@ class Test_KV3File(unittest.TestCase):
 
     def test_dict_instantiated_kv3file(self):
         self.assertEqual(
-            textwriter.write_text(KV3File({
+            textwriter.encode(KV3File({
                 'a': 'asd asd',
                 'b': {
                     "inner_b": 3
@@ -133,17 +133,17 @@ class Test_KV3Value(unittest.TestCase):
         self.assertNotEqual(flagged_value(5, Flag.resource), flagged_value(5, Flag.resource | Flag.resource_name))
 
     def test_value_serializes(self):
-        textwriter.write_text(KV3File(value=None))
-        textwriter.write_text(KV3File(value=True))
-        textwriter.write_text(KV3File(value=False))
-        textwriter.write_text(KV3File(value=1))
-        textwriter.write_text(KV3File(value=1.0))
-        textwriter.write_text(KV3File(value=self.MyKV3Format.Substance.FIRE))
-        textwriter.write_text(KV3File(value=str()))
-        textwriter.write_text(KV3File(value=flagged_value(str(), Flag.multilinestring)))
-        textwriter.write_text(KV3File(value=flagged_value(str(), Flag.resource)))
-        textwriter.write_text(KV3File(value=[]))
-        textwriter.write_text(KV3File(value={}))
-        textwriter.write_text(KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format))
-        textwriter.write_text(KV3File(value=bytes(byte for byte in range(256))))
-        textwriter.write_text(KV3File(value=bytearray(byte for byte in range(256))))
+        textwriter.encode(KV3File(value=None))
+        textwriter.encode(KV3File(value=True))
+        textwriter.encode(KV3File(value=False))
+        textwriter.encode(KV3File(value=1))
+        textwriter.encode(KV3File(value=1.0))
+        textwriter.encode(KV3File(value=self.MyKV3Format.Substance.FIRE))
+        textwriter.encode(KV3File(value=str()))
+        textwriter.encode(KV3File(value=flagged_value(str(), Flag.multilinestring)))
+        textwriter.encode(KV3File(value=flagged_value(str(), Flag.resource)))
+        textwriter.encode(KV3File(value=[]))
+        textwriter.encode(KV3File(value={}))
+        textwriter.encode(KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format))
+        textwriter.encode(KV3File(value=bytes(byte for byte in range(256))))
+        textwriter.encode(KV3File(value=bytearray(byte for byte in range(256))))

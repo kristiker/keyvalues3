@@ -105,11 +105,11 @@ class Test_TextReadWriting(unittest.TestCase):
     
     def test_prints_back_same_kv3_header(self):
         value = KV3TextReader().parse(default_header + self.kv3text)
-        self.assertEqual(default_header + self.kv3text, kv3textwriter.write(value))
+        self.assertEqual(default_header + self.kv3text, kv3textwriter.encode(value))
 
     def test_prints_back_same_kv3_no_header(self):
         value = KV3TextReaderNoHeader().parse(self.kv3text)
-        self.assertEqual(self.kv3text, kv3textwriter.write(value, kv3textwriter.TextWriterOptions(no_header=True)))
+        self.assertEqual(self.kv3text, kv3textwriter.encode(value, kv3textwriter.KV3EncoderOptions(no_header=True)))
 
 
 
