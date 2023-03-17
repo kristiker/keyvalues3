@@ -46,9 +46,9 @@ class TestBinaryV1UncompressedWriter(unittest.TestCase):
         except Exception:
             self.skipTest("text parser fail, unrelated to binary writer")
         else:
-            with io.BytesIO() as file:
+            with io.BytesIO() as f:
                 writer = BinaryV1UncompressedWriter(kv3_obj)
-                writer.write(file)
+                writer.write(f)
 
 class TestBinaryLZ4:
     def test_encodes(self):

@@ -59,8 +59,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     def parse(self, text: str) -> kv3.KV3File:
         """Parse the given text into a KV3File object."""
-        return super().parse(text)
-
+        try:
+            return super().parse(text)
+        except parsimonious.exceptions.ParseError as e:
+            raise kv3.KV3DecodeError("KV3 Text " + str(e)) from e
     loads = parse
     read = parse
 

@@ -4,6 +4,9 @@ import enum
 from typing import Protocol, runtime_checkable
 from uuid import UUID
 
+class KV3DecodeError(ValueError): pass
+class InvalidKV3Magic(KV3DecodeError): pass
+
 @dataclasses.dataclass(frozen=True)
 class _HeaderPiece:
     name: str
@@ -20,7 +23,6 @@ class _HeaderPiece:
 class Encoding(_HeaderPiece): pass
 @dataclasses.dataclass(frozen=True)
 class Format(_HeaderPiece): pass
-
 
 KV3_ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("1b860500-f7d8-40c1-ad82-75a48267e714"))
 KV3_ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("95791a46-95bc-4f6c-a70b-05bca1b7dfd2"))
