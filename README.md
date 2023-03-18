@@ -8,12 +8,12 @@ KeyValues3 is a Valve developed data format. It is similar in structure to JSON,
 KV3File(value={'default': {'aim_target_acquisition_lerp_time': 0.7, 'aim_target_acquisition_lerp_time_deviation': ...)
 
 >>> with open("tests/documents/bt_config.kv3", "r", encoding="utf-8") as fp:
-...     kv3file = keyvalues3.read(fp)
-...     print(kv3file.original_encoding)
-...     print(kv3file.format)
-...     print(kv3file.value.keys())
-...     print(kv3file.value["elite"]["reaction_time"])
-...
+...     file = keyvalues3.read(fp)
+...     print(file.original_encoding)
+...     print(file.format)
+...     print(file.value.keys())
+...     print(file.value["elite"]["reaction_time"])
+
 Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 Encoding(name='text', version=UUID('e21c7f3c-8a33-41c5-9977-a76d3a32aa0d'))
 dict_keys(['default', 'low', 'fair', 'normal', 'tough', 'hard', 'very_hard', 'expert', 'elite'])
