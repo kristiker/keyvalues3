@@ -4,8 +4,14 @@ import typing
 from struct import pack
 import keyvalues3 as kv3
 
-class BinaryMagics(enum.Enum):
+class BinaryMagics(bytes, enum.Enum):
     VKV3 = b"VKV\x03"
+    KV3_01 = b"\x013VK"
+    KV3_02 = b"\x023VK"
+    KV3_03 = b"\x033VK"
+    @classmethod
+    def is_defined(cls, magic: bytes):
+        return magic in cls._value2member_map_
 
 class BinaryTypes(enum.IntEnum):
     null = 1

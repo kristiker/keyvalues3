@@ -31,9 +31,14 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
     def read_binary(binary_stream: typing.BinaryIO):
         magic = binary_stream.read(4)
         binary_stream.seek(0)
-        if magic == BinaryMagics.VKV3.value:
-            return KV3File({"binary": "reader", "todo": "implement"}, original_encoding=ENCODING_BINARY_UNCOMPRESSED)
-        raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
+
+        if not BinaryMagics.is_defined(magic):
+            raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
+    
+        if magic != BinaryMagics.VKV3:
+            raise NotImplementedError("Unsupported binary KV3 magic: " + repr(magic))
+
+        return KV3File({"binary": "reader", "todo": "implement"}, original_encoding=ENCODING_BINARY_UNCOMPRESSED)
 
     def read_text(text_stream: typing.TextIO):
         return KV3TextReader().parse(text_stream.read())

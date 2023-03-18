@@ -9,7 +9,7 @@ class Dataclass(typing.Protocol):
 
 class KV3File:
     value: kv3.ValueType | Dataclass
-    """The value of the KV3 file. Usually a `dict`, but it can be any of the `kv3.Types`."""
+    """The value inside this KV3 file. Usually a `dict`, but it can be any of the `kv3.Types`."""
     format: kv3.Format
     """The format of the KV3 file."""
     original_encoding: kv3.Encoding | None
