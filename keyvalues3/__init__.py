@@ -1,5 +1,6 @@
 import os, io, typing
 from .keyvalues3 import *
+from .kv3file import KV3File
 from .binarywriter import BinaryMagics
 from .textreader import KV3TextReader
 from . import textwriter
@@ -8,15 +9,22 @@ __all__ = [ "read", "write" ]
 
 @typing.overload
 def read(text_stream: typing.TextIO) -> KV3File:
-    """Read a text KV3 file from a stream."""
+    """Read a text KV3 stream."""
 
 @typing.overload
 def read(binary_stream: typing.BinaryIO) -> KV3File:
-    """Read a binary KV3 file from a stream."""
+    """Read a binary KV3 stream."""
 
 @typing.overload
 def read(path: str | os.PathLike) -> KV3File:
-    """Read a binary or text KV3 file from a path."""
+    """
+    Read a text or binary KV3 file from a path.
+    
+    If a binary magic is present, read in binary mode, otherwise text.
+
+    Raises:
+        KV3DecodeError: Error decoding in any of the modes.
+    """
 
 def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
 
@@ -24,7 +32,7 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
         magic = binary_stream.read(4)
         binary_stream.seek(0)
         if magic == BinaryMagics.VKV3.value:
-            return KV3File({"binary": "reader", "todo": "implement"})
+            return KV3File({"binary": "reader", "todo": "implement"}, original_encoding=ENCODING_BINARY_UNCOMPRESSED)
         raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
 
     def read_text(text_stream: typing.TextIO):
@@ -49,14 +57,14 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
                 ) from text_error
         return rv
 
-def write(kv3: KV3File | kv3_types, path: str | os.PathLike, encoding: Encoding = KV3_ENCODING_TEXT, format: Format = KV3_FORMAT_GENERIC):
+def write(kv3: KV3File | ValueType, path: str | os.PathLike, encoding: Encoding = ENCODING_TEXT, format: Format = FORMAT_GENERIC):
     raise NotImplementedError()
     if not isinstance(kv3, KV3File):
         kv3 = KV3File(kv3, format=format, validate_value=True)
 
-    if encoding == KV3_ENCODING_TEXT:
+    if encoding == ENCODING_TEXT:
         textwriter.encode(kv3)
-    elif encoding == KV3_ENCODING_BINARY_UNCOMPRESSED:
+    elif encoding == ENCODING_BINARY_UNCOMPRESSED:
        binarywriter.BinaryV1UncompressedWriter(kv3).write(None)
-    elif encoding == KV3_ENCODING_BINARY_BLOCK_LZ4:
+    elif encoding == ENCODING_BINARY_BLOCK_LZ4:
         binarywriter.BinaryLZ4(kv3).write(None)

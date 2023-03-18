@@ -73,7 +73,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def is_object(node):
         return node is not KV3TextReader.non_object and not isinstance(node, KV3TextReader.list_of_nodes)
 
-    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.kv3_types]) -> kv3.KV3File:
+    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.ValueType]) -> kv3.KV3File:
         header = visited_children[0]
         if not isinstance(header, kv3.KV3Header):
             raise ValueError("kv3 has invalid header")
@@ -82,7 +82,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
         except StopIteration:
             raise ValueError("kv3 contains no data")
         else:
-            return kv3.KV3File(value = data, format = header.format)
+            return kv3.KV3File(value=data, format=header.format, original_encoding=header.encoding)
 
     def visit_header(self, _, visited_children) -> kv3.KV3Header:
         return kv3.KV3Header(encoding=visited_children[4], format=visited_children[6])
@@ -92,10 +92,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
     def visit_format(self, _, visited_children) -> kv3.Format:
         return kv3.Format(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
 
-    def visit_data(self, node, visited_children) -> kv3.kv3_types:
+    def visit_data(self, node, visited_children) -> kv3.ValueType:
         return visited_children[0]
 
-    def visit_value(self, _, visited_children) -> kv3.kv3_types:
+    def visit_value(self, _, visited_children) -> kv3.ValueType:
         return visited_children[0]
 
     def visit_value_flagged(self, _, visited_children) -> kv3.flagged_value:
@@ -175,7 +175,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
 class KV3TextReaderNoHeader(KV3TextReader):
     grammar = kv3grammar_noheader
-    def visit_kv3_noheader(self, node, visited_children: list[kv3.kv3_types]) -> kv3.kv3_types:
+    def visit_kv3_noheader(self, node, visited_children: list[kv3.ValueType]) -> kv3.ValueType:
         try:
             data = next(data for data in visited_children if self.is_object(data))
         except StopIteration:

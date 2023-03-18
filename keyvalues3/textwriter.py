@@ -8,11 +8,11 @@ class KV3EncoderOptions:
         self.serialize_enums_as_ints = serialize_enums_as_ints
         self.no_header = no_header
 
-def encode(kv3file: kv3.KV3File | kv3.kv3_types, options=KV3EncoderOptions()) -> str:
+def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) -> str:
     """Encode a KV3File or value to UTF-8 Text."""
 
-    encoding = kv3.KV3_ENCODING_TEXT
-    format = kv3.KV3_FORMAT_GENERIC
+    encoding = kv3.ENCODING_TEXT
+    format = kv3.FORMAT_GENERIC
     value = kv3file
 
     if isinstance(kv3file, kv3.KV3File):
@@ -23,7 +23,7 @@ def encode(kv3file: kv3.KV3File | kv3.kv3_types, options=KV3EncoderOptions()) ->
     if not options.no_header:
         text += str(kv3.KV3Header(encoding=encoding, format=format)) + "\n"
 
-    def value_serialize(value: kv3.kv3_types, indentation_level = 0, dictionary_value = False) -> str:
+    def value_serialize(value: kv3.ValueType, indentation_level = 0, dictionary_value = False) -> str:
         indent = ("\t" * (indentation_level))
         indent_nested = ("\t" * (indentation_level + 1))
         match value:

@@ -4,8 +4,10 @@ import pytest
 import keyvalues3
 
 def verify_example(text_kv3: keyvalues3.KV3File):
+    assert text_kv3.original_encoding == keyvalues3.ENCODING_TEXT
+    assert isinstance(text_kv3.value, dict)
     assert text_kv3.value["boolValue"] == False
-    assert text_kv3.format == keyvalues3.KV3_FORMAT_GENERIC
+    assert text_kv3.format == keyvalues3.FORMAT_GENERIC
 
 def test_api_read_from_path():
     text_kv3 = keyvalues3.read("tests/documents/example.kv3")
@@ -28,9 +30,11 @@ def test_api_read_from_stream():
 
 def test_api_read_binary():
     binary_kv3 = keyvalues3.read("tests/documents/binary/example.kv3")
+    assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["binary"] == "reader"
 
     binary_kv3 = keyvalues3.read("tests/documents/binary/example_lz4.kv3")
+    assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["binary"] == "reader"
 
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):

@@ -6,6 +6,8 @@ import keyvalues3.textwriter as kv3textwriter
 
 default_header = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
 
+# pyright: reportOptionalMemberAccess=false, reportOptionalSubscript=false
+
 class Test_TextReading(unittest.TestCase):
 
     def test_parses_null_kv3(self):
@@ -25,6 +27,7 @@ class Test_TextReading(unittest.TestCase):
     def test_parses_example_kv3(self):
         with open("tests/documents/example.kv3", "r", encoding="utf-8") as f:
             kv = KV3TextReader().parse(f.read()).value
+            assert isinstance(kv, dict)
             self.assertEqual(
                 kv["multiLineStringValue"].value,
                 r"""Lorem ipsum \a \b \c \n ' " "" 😊

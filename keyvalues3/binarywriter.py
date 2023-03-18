@@ -48,7 +48,7 @@ zeros_ones = {
 }
 
 class BinaryV1UncompressedWriter:
-    encoding = kv3.KV3_ENCODING_BINARY_UNCOMPRESSED
+    encoding = kv3.ENCODING_BINARY_UNCOMPRESSED
     def __init__(self, kv3file: kv3.KV3File, serialize_enums_as_ints: bool = False):
         self.kv3file = kv3file
         self.serialize_enums_as_ints = serialize_enums_as_ints
@@ -148,7 +148,7 @@ class BinaryV1UncompressedWriter:
 
 import lz4.block
 class BinaryLZ4(BinaryV1UncompressedWriter):
-    encoding = kv3.KV3_ENCODING_BINARY_BLOCK_LZ4
+    encoding = kv3.ENCODING_BINARY_BLOCK_LZ4
     def __bytes__(self):
         self.strings.clear()
         blob = self.encode_header()

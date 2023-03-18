@@ -1,7 +1,6 @@
 import array
 import dataclasses
 import enum
-from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 class KV3DecodeError(ValueError): pass
@@ -24,17 +23,17 @@ class Encoding(_HeaderPiece): pass
 @dataclasses.dataclass(frozen=True)
 class Format(_HeaderPiece): pass
 
-KV3_ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("1b860500-f7d8-40c1-ad82-75a48267e714"))
-KV3_ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("95791a46-95bc-4f6c-a70b-05bca1b7dfd2"))
-KV3_ENCODING_BINARY_BLOCK_LZ4 = Format("binarylz4", UUID("6847348a-63a1-4f5c-a197-53806fd9b119"))
-KV3_ENCODING_TEXT = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
+ENCODING_BINARY_UNCOMPRESSED = Encoding("binary", UUID("1b860500-f7d8-40c1-ad82-75a48267e714"))
+ENCODING_BINARY_BLOCK_COMPRESSED = Encoding("binarybc", UUID("95791a46-95bc-4f6c-a70b-05bca1b7dfd2"))
+ENCODING_BINARY_BLOCK_LZ4 = Format("binarylz4", UUID("6847348a-63a1-4f5c-a197-53806fd9b119"))
+ENCODING_TEXT = Encoding("text", UUID("e21c7f3c-8a33-41c5-9977-a76d3a32aa0d"))
 
-KV3_FORMAT_GENERIC = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
+FORMAT_GENERIC = Format("generic", UUID("7412167c-06e9-4698-aff2-e63eb59037e7"))
 
 @dataclasses.dataclass(frozen=True)
 class KV3Header:
-    encoding: Encoding = KV3_ENCODING_TEXT
-    format: Format = KV3_FORMAT_GENERIC
+    encoding: Encoding = ENCODING_TEXT
+    format: Format = FORMAT_GENERIC
     def __str__(self):
         return f"<!-- kv3 {self.encoding} {self.format} -->"
 
@@ -42,9 +41,14 @@ class KV3Header:
 simple_types = None | bool | int | float | enum.IntEnum | str
 container_types = list[simple_types] | array.array | dict[str, simple_types]
 bytearrays = bytes | bytearray
-kv3_types = simple_types | container_types | bytearrays
+ValueType = simple_types | container_types | bytearrays
+"""
+Any of `None` `bool` `int` `float` `enum.IntEnum` `str`
+`list[ValueType]` `array.array` `dict[str, ValueType]`
+`bytes` `bytearray` `flagged_value`.
+"""
 
-def check_valid(value: kv3_types):
+def check_valid(value: ValueType):
     match value:
         case flagged_value(actual_value, _):
             return check_valid(actual_value)
@@ -72,7 +76,7 @@ def check_valid(value: kv3_types):
         case _:
             raise TypeError(f"Invalid type {type(value)} for KV3 value.")
 
-def is_valid(value: kv3_types) -> bool:
+def is_valid(value: ValueType) -> bool:
     try:
         check_valid(value)
         return True
@@ -89,14 +93,17 @@ class Flag(enum.IntFlag):
     subclass = enum.auto()
     def __str__(self):
         return "|".join(flag.name for flag in self.__class__ if self.value & flag)
-    def __call__(self, value: kv3_types):
+    def __call__(self, value: ValueType):
         return flagged_value(value, self)
 
-class flagged_value:
+class flagged_value():
+    """
+    Wrapper for KV3 values that have a flag attached to them.
+    """
     __match_args__ = __slots__ = ("value", "flags")
 
-    def __init__(self, value: kv3_types, flags: Flag = Flag(0)):
-        assert isinstance(value, flagged_value) == False
+    def __init__(self, value: ValueType, flags: Flag = Flag(0)):
+        assert isinstance(value, flagged_value) == False, "value should not be already flagged"
         self.value = value
         self.flags = flags
 
@@ -108,39 +115,4 @@ class flagged_value:
                 return self.value == other
             return False
 
-kv3_types = kv3_types | flagged_value
-
-@runtime_checkable
-class Dataclass(Protocol):
-    __dataclass_fields__: dict[str, dataclasses.Field]
-
-class KV3File:
-    def __init__(self,
-            value: kv3_types | Dataclass = None,
-            format: Format = KV3_FORMAT_GENERIC,
-            validate_value: bool = True,
-            ):
-
-        self.format = format
-
-        if isinstance(value, Dataclass) and not isinstance(value, flagged_value):
-            self.value: dict = dataclasses.asdict(value)
-        else:
-            self.value: kv3_types = value
-
-        if validate_value:
-            check_valid(self.value)
-
-    #def __str__(self):
-    #    return write_text()
-
-    #def ToString(self): return self.__str__()
-
-    #def __bytes__(self):
-    #    return bytes(BinaryV1UncompressedWriter(self))
-
-    #def ToBytes(self): return self.__bytes__()
-
-    #@classmethod
-    #def from_string(cls, string: str):
-    #    return KV3TextReader().parse(string)
+ValueType = ValueType | flagged_value
