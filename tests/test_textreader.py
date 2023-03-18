@@ -167,9 +167,9 @@ def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool, no_header: 
 @pytest.mark.parametrize("file,assumed_valid,no_header", vpfc_files, ids=[f"'{f.name}'-{v}{n}" for f, v, n in vpfc_files])
 def test_parity(file: Path, assumed_valid: bool, no_header: bool):
     """Check parity with resourcecompiler"""
-    result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run([resourcecompiler, "-f", file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if result.returncode != 0:
+    if not b"a root object of type 'CParticleSystemDefinition'" in result.stdout:
         if no_header: # these do not compile
             return
         if assumed_valid:
