@@ -139,8 +139,6 @@ kv3_files = []
 vpfc_files = []
 
 for kv3file in Path("tests/documents").glob('*.kv3'):
-    if "binary" in kv3file.stem:
-        continue
     assumed_valid = kv3file.stem != "not_kv3"
     no_header = "noheader" in kv3file.stem
     parameters = (assumed_valid, no_header)

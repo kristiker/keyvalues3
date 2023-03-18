@@ -27,10 +27,10 @@ def test_api_read_from_stream():
     
 
 def test_api_read_binary():
-    binary_kv3 = keyvalues3.read("tests/documents/example_binary.kv3")
+    binary_kv3 = keyvalues3.read("tests/documents/binary/example.kv3")
     assert binary_kv3.value["binary"] == "reader"
 
-    binary_kv3 = keyvalues3.read("tests/documents/example_binary_lz4.kv3")
+    binary_kv3 = keyvalues3.read("tests/documents/binary/example_lz4.kv3")
     assert binary_kv3.value["binary"] == "reader"
 
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
