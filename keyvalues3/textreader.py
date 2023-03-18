@@ -8,8 +8,8 @@ common = """
 
     array = "[" items "]"
         items = (ws* data ws* ",")* ws* (data ws*)?
-    dict = "{" pair* "}"
-        pair = ws* key ws* "=" ws* data ws*
+    dict = "{" ws* pair* "}"
+        pair = key ws* "=" ws* data ws*
             key = (identifier / string)
 
     value_flagged = (flags ":") value
@@ -154,7 +154,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     def visit_dict(self, node, visited_children) -> dict:
         rv = {}
-        for kvp in visited_children[1]:
+        pairs = visited_children[2]
+        if pairs is self.non_object:
+            return rv
+        for kvp in pairs:
             rv[kvp[0]] = kvp[1]
         return rv
 

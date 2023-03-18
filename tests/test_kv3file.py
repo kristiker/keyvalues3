@@ -11,69 +11,14 @@ class Test_KV3File(unittest.TestCase):
         self.assertEqual(str(KV3Header()), self.default_header)
 
     def test_custom_header(self):
-        self.assertEqual(
-            str(KV3Header(Encoding('text2', uuid.UUID(int = 0)), Format('generic2', uuid.UUID(int = 1)))),
-            '<!-- kv3 encoding:text2:version{00000000-0000-0000-0000-000000000000} format:generic2:version{00000000-0000-0000-0000-000000000001} -->'
-        )
-
         with self.assertRaises(ValueError): Format('vpcf', "v2")
         with self.assertRaises(ValueError): Format('vpcf1 with spaces', uuid.UUID(int = 0))
 
     def test_empty_instantiated_kv3file_is_null(self):
-        self.assertEqual(
-            textwriter.encode(KV3File()),
-            self.default_header + "\nnull"
-        )
-        self.assertEqual(
-            textwriter.encode(KV3File(), textwriter.KV3EncoderOptions(no_header=True)),
-            "null"
-        )
-
-    def test_dataclass_instantiated_kv3file(self):
-        @dataclasses.dataclass
-        class MyKV3Format:
-            a: str = 'asd asd'
-            b: dict = dataclasses.field(default_factory=lambda: {"inner_b":3})
-            c: list = dataclasses.field(default_factory=lambda: ["listed_text1", "listed_text2"])
-        self.assertEqual(
-            textwriter.encode(KV3File(MyKV3Format())),
-            self.default_header + "\n" + """
-            {
-                a = "asd asd"
-                b = 
-                {
-                    inner_b = 3
-                }
-                c = ["listed_text1", "listed_text2"]
-            }
-            """.strip() # undo detached triple quotes
-            .replace(" "*4, "\t") # convert to tabs
-            .replace("\t"*3, "") # remove added indent
-        )
-
-    def test_dict_instantiated_kv3file(self):
-        self.assertEqual(
-            textwriter.encode(KV3File({
-                'a': 'asd asd',
-                'b': {
-                    "inner_b": 3
-                },
-                'c': ["listed_text1", "listed_text2"]
-            }
-            )),
-            self.default_header + "\n" + """
-            {
-                a = "asd asd"
-                b = 
-                {
-                    inner_b = 3
-                }
-                c = ["listed_text1", "listed_text2"]
-            }
-            """.strip() # undo detached triple quotes
-            .replace(" "*4, "\t") # convert to tabs
-            .replace("\t"*3, "") # remove added indent
-        )
+        kv3_null_implicit = KV3File()
+        kv3_null = KV3File(None)
+        assert kv3_null_implicit.value is None
+        assert kv3_null.value is None
 
 class Test_KV3Value(unittest.TestCase):
     

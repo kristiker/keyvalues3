@@ -1,0 +1,19 @@
+<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
+{
+    m_vecTexturesInput = 
+    [
+        {
+        },
+    ]
+
+    a = {}
+    b = { }
+    c = {k=1}
+    d = { k=2 }
+    e = { k= 3 }
+    f = { k =4 }
+    g = { k = 5 }
+    h = { k = 6 k2 = 8 }
+
+    z = { z1 = { z2 = { z3 = { z4 = { z5 = { z6 = { z7 = { z8 = { z9 = { z10 = { z11 = { z12 = { z13 = { }}}}}}}}}}}}}}
+}

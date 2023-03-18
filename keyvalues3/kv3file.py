@@ -32,3 +32,11 @@ class KV3File:
 
         if validate_value:
             kv3.check_valid(self.value)
+        
+    def __repr__(self) -> str:
+        value = repr(self.value)
+        if len(value) > 100:
+            value = value[:100] + '...'
+        if self.format == kv3.FORMAT_GENERIC:
+            return f"KV3File(value={value})"
+        return f"KV3File({value}, format={self.format!r})"
