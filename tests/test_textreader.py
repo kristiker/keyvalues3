@@ -141,17 +141,18 @@ vpfc_files = []
 for kv3file in Path("tests/documents").glob('*.kv3'):
     if "binary" in kv3file.stem:
         continue
-    assumed_valid = False if kv3file.stem == "not_kv3" else True
-    no_header = True if "noheader" in kv3file.stem else False
-    parameters = (kv3file, assumed_valid, no_header)
-    kv3_files.append(parameters)
+    assumed_valid = kv3file.stem != "not_kv3"
+    no_header = "noheader" in kv3file.stem
+    parameters = (assumed_valid, no_header)
+    
+    kv3_files.append((kv3file, *parameters))
     if resourcecompiler.is_file():
         vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
         shutil.copy(kv3file, vpcf_to_compile)
-        vpfc_files.append(parameters)
+        vpfc_files.append((vpcf_to_compile, *parameters))
 
-@pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
-@pytest.mark.parametrize("file,assumed_valid,no_header", kv3_files, ids=[f"'{f.name}'-{v}" for f, v, n in kv3_files])
+#@pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
+@pytest.mark.parametrize("file,assumed_valid,no_header", kv3_files, ids=[f"'{f.name}'-{v}{n}" for f, v, n in kv3_files])
 def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool, no_header: bool):
     with open(file, "r") as f:
         reader = KV3TextReaderNoHeader() if no_header else KV3TextReader()
@@ -162,22 +163,22 @@ def test_reads_kv3_file_as_expected(file: Path, assumed_valid: bool, no_header: 
             reader.parse(f.read())
 
 @pytest.mark.skipif(resourcecompiler.is_file() == False, reason="resourcecompiler not available")
-@pytest.mark.parametrize("file,assumed_valid,no_header", vpfc_files, ids=[f"'{f.name}'-{v}" for f, v in vpfc_files])
+@pytest.mark.parametrize("file,assumed_valid,no_header", vpfc_files, ids=[f"'{f.name}'-{v}{n}" for f, v, n in vpfc_files])
 def test_parity(file: Path, assumed_valid: bool, no_header: bool):
     """Check parity with resourcecompiler"""
     result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if result.returncode != 0:
         if assumed_valid:
-            warnings.warn(f"Resourcecompiler deems '{file.name}' as not valid KV3", UserWarning)
+            warnings.warn(f"File '{file.name}' was assumed valid, but resourcecompiler says it isn't.", UserWarning)
         
         # if resourcecompiler failed, we should fail too
-        with pytest.raises(Exception):
+        with pytest.raises(kv3.KV3DecodeError):
             with open(file, "r") as f:
                 KV3TextReader().parse(f.read())
     else:
         if not assumed_valid:
-            warnings.warn(f"Resourcecompiler deems '{file.name}' as valid KV3", UserWarning)
+            warnings.warn(f"File '{file.name}' was assumed invalid, but resourcecompiler says it's fine.", UserWarning)
         
         # if resourcecompiler succeeded, we should succeed too
         with open(file, "r") as f:
