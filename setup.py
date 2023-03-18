@@ -1,7 +1,7 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='kv3',
+    name='keyvalues3',
     version='0.1',
 
     author='kristiker',
@@ -12,7 +12,7 @@ setup(
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type='text/markdown',
 
-    packages=open('requirements.txt', "r", encoding="utf-8").read().splitlines(),
+    packages=find_packages(),
     python_requires='>=3.11',
     classifiers=[
         'Programming Language :: Python :: 3.11',
