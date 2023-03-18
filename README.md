@@ -3,22 +3,27 @@ KeyValues3 is a Valve developed data format. It is similar in structure to JSON,
 
 ## Usage
 ```py
->>> import keyvalues3 as kv3
->>> kv3.read("tests/documents/bt_config.kv3")
-KV3File(value={'default': {'aim_target_acquisition_lerp_time': 0.7, 'aim_target_acquisition_lerp_time_deviation': ...)
-
->>> with open("tests/documents/bt_config.kv3", "r", encoding="utf-8") as fp:
-...     file = keyvalues3.read(fp)
-...     print(file.original_encoding)
-...     print(file.format)
-...     print(file.value.keys())
-...     print(file.value["elite"]["reaction_time"])
-
-Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
-Encoding(name='text', version=UUID('e21c7f3c-8a33-41c5-9977-a76d3a32aa0d'))
+import keyvalues3 as kv3
+file = kv3.read("tests/documents/bt_config.kv3")
+```
+```py
+>>> file.value.keys()
 dict_keys(['default', 'low', 'fair', 'normal', 'tough', 'hard', 'very_hard', 'expert', 'elite'])
-0.12
+```
 
+```py
+>>> file.value["elite"]["reaction_time"]
+0.12
+```
+```py
+>>> type(file.value)
+<class 'dict'>
+
+>>> file.original_encoding
+Encoding(name='text', version=UUID('e21c7f3c-8a33-41c5-9977-a76d3a32aa0d'))
+
+>>> file.format
+Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 ```
 
 ## Install
