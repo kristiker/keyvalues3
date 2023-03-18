@@ -170,8 +170,10 @@ def test_parity(file: Path, assumed_valid: bool, no_header: bool):
     result = subprocess.run([resourcecompiler, file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if result.returncode != 0:
+        if no_header: # these do not compile
+            return
         if assumed_valid:
-            warnings.warn(f"File '{file.name}' was assumed valid, but resourcecompiler says it isn't.", UserWarning)
+            warnings.warn(f"File '{file.name}' was assumed valid, but resourcecompiler says it isn't. {result.stdout.decode('utf-8')}", UserWarning)
         
         # if resourcecompiler failed, we should fail too
         with pytest.raises(kv3.KV3DecodeError):

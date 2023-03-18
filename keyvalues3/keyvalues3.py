@@ -49,6 +49,10 @@ Any of `None` `bool` `int` `float` `enum.IntEnum` `str`
 """
 
 def check_valid(value: ValueType):
+    """
+    Check if a value is valid for KV3.
+    Raises `ValueError`, `OverflowError`, `TypeError`.
+    """
     match value:
         case flagged_value(actual_value, _):
             return check_valid(actual_value)
@@ -103,6 +107,7 @@ class flagged_value():
     __match_args__ = __slots__ = ("value", "flags")
 
     def __init__(self, value: ValueType, flags: Flag = Flag(0)):
+        #assert flags.bit_count() == 1, "only one flag is allowed"
         assert isinstance(value, flagged_value) == False, "value should not be already flagged"
         self.value = value
         self.flags = flags

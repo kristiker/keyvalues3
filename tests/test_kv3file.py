@@ -19,7 +19,7 @@ class Test_KV3File(unittest.TestCase):
         with self.assertRaises(ValueError): Format('vpcf', "v2")
         with self.assertRaises(ValueError): Format('vpcf1 with spaces', uuid.UUID(int = 0))
 
-    def test_empty_instantiated_kv3file(self):
+    def test_empty_instantiated_kv3file_is_null(self):
         self.assertEqual(
             textwriter.encode(KV3File()),
             self.default_header + "\nnull"
