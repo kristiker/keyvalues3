@@ -27,7 +27,7 @@ Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 ```
 
 ## Install
-`pip install git+https://github.com/kristiker/keyvalues3`
+
 
 ## Supported encodings
 | Encoding 👩‍💻 | Read 📖 | Write ✍️ |
