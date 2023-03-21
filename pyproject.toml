@@ -1,0 +1,24 @@
+[project]
+name = "keyvalues3"
+authors = [{name = "kristiker", email = "kristik06@outlook.com"}]
+readme = "README.md"
+dynamic = ["version", "description"]
+keywords = ["parser", "kv3", "keyvalues", "keyvalues3", "valve"]
+
+requires-python = ">=3.11"
+dependencies = [
+    "parsimonious >=0.10,<1.0",
+    "lz4 >=4.3.2,<5.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
+
+[project.urls]
+Source = "https://github.com/kristiker/keyvalues3"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"

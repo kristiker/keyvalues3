@@ -1,3 +1,7 @@
+"""
+Read and write Valve's KeyValues3 format
+"""
+
 import os, io, typing
 from .keyvalues3 import *
 from .kv3file import KV3File
@@ -5,6 +9,7 @@ from .binarywriter import BinaryMagics
 from .textreader import KV3TextReader
 from . import textwriter
 
+__version__ = "0.1-alpha1"
 __all__ = [ "read", "write" ]
 
 @typing.overload
