@@ -9,7 +9,7 @@ from .binarywriter import BinaryMagics
 from .textreader import KV3TextReader
 from . import textwriter
 
-__version__ = "0.1-alpha1"
+__version__ = "0.1a1"
 __all__ = [ "read", "write" ]
 
 @typing.overload
