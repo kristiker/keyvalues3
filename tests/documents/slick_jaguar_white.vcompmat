@@ -1,0 +1,59 @@
+<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
+{
+	_class = "CCompositeMaterialEditorDoc"
+	m_nVersion = 1
+	m_Points = 
+	[
+		
+		{
+			m_vecCompositeMaterialAssemblyProcedures = 
+			[
+				
+				{
+					m_vecCompMatIncludes = 
+					[
+						resource_name:"gloves/paints/_shared_paint_generic.vcompmat",
+					]
+					m_vecCompositeInputContainers = 
+					[
+						
+						{
+							m_nCompositeMaterialInputContainerSourceType = "CONTAINER_SOURCE_TYPE_SPECIFIC_MATERIAL"
+							m_strSpecificContainerMaterial = resource_name:"gloves/paints/slick_jaguar_white.vmat"
+							m_strAlias = "paint"
+						},
+						
+						{
+							m_nCompositeMaterialInputContainerSourceType = "CONTAINER_SOURCE_TYPE_LOOSE_VARIABLES"
+							m_strAlias = "instance_params"
+							m_vecLooseVariables = 
+							[
+								
+								{
+									m_strName = "g_fPatternTexCoordOffset"
+									m_nVariableType = "LOOSE_VARIABLE_TYPE_FLOAT2"
+									m_bHasFloatBounds = true
+									m_flValueFloatX = 0.000000
+									m_flValueFloatX_Min = 0.000000
+									m_flValueFloatX_Max = 1.000000
+									m_flValueFloatY = 0.000000
+									m_flValueFloatY_Min = 0.000000
+									m_flValueFloatY_Max = 1.000000
+								},
+								
+								{
+									m_strName = "g_fPatternTexCoordRotation"
+									m_nVariableType = "LOOSE_VARIABLE_TYPE_FLOAT1"
+									m_bHasFloatBounds = true
+									m_flValueFloatX = 0.000000
+									m_flValueFloatX_Min = -25.000000
+									m_flValueFloatX_Max = 25.000000
+								},
+							]
+						},
+					]
+				},
+			]
+		},
+	]
+}
