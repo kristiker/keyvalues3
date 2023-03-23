@@ -1,4 +1,5 @@
 import unittest
+import itertools
 
 import keyvalues3 as kv3
 from keyvalues3.textreader import KV3TextReader, KV3TextReaderNoHeader, kv3grammar
@@ -141,7 +142,12 @@ def setup_teardown():
 kv3_files = []
 vpfc_files = []
 
-for kv3file in Path("tests/documents").glob('*.kv3'):
+docs = Path("tests/documents")
+
+for kv3file in itertools.chain(
+        docs.glob('*.kv3'),
+        docs.glob('*.vcompmat')
+    ):
     assumed_valid = kv3file.stem != "not_kv3"
     no_header = "noheader" in kv3file.stem
     parameters = (assumed_valid, no_header)
