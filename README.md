@@ -4,23 +4,23 @@ KeyValues3 is a Valve developed data format. It is similar in structure to JSON,
 ## Usage
 ```py
 import keyvalues3 as kv3
-bt = kv3.read("tests/documents/bt_config.kv3")
+bt_config = kv3.read("tests/documents/bt_config.kv3")
 
->>> bt.keys()
+>>> bt_config.keys()
 dict_keys(['default', 'low', 'fair', 'normal', 'tough', 'hard', 'very_hard', 'expert', 'elite'])
 
->>> bt["elite"]["reaction_time"]
+>>> bt_config["elite"]["reaction_time"]
 0.12
 ```
 
 ```py
->>> type(file.value)
+>>> type(bt_config.value)
 <class 'dict'>
 
->>> file.original_encoding
+>>> bt_config.original_encoding
 Encoding(name='text', version=UUID('e21c7f3c-8a33-41c5-9977-a76d3a32aa0d'))
 
->>> file.format
+>>> bt_config.format
 Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 ```
 
