@@ -13,7 +13,7 @@ def test_api_read_from_path():
     text_kv3 = keyvalues3.read("tests/documents/example.kv3")
     verify_example(text_kv3)
 
-    with pytest.raises(keyvalues3.KV3DecodeError, match="Failed to read KV3 file in both text and binary modes."):
+    with pytest.raises(keyvalues3.KV3DecodeError, match="Failed to read KV3 file in text mode."):
         keyvalues3.read("tests/documents/not_kv3.kv3")
 
 def test_api_read_from_stream():

@@ -60,13 +60,11 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
             try:
                 rv = read_text(io.TextIOWrapper(fp, encoding="utf-8"))
             except KV3DecodeError as text_error:
-                text_for_sure = "<!--" in (text_err_str:=str(not_binary_error))
+                text_for_sure = "<!--" in (binary_err_str:=str(not_binary_error))
                 if (text_for_sure):
                     raise text_error
                 raise KV3DecodeError(
-                    "Failed to read KV3 file in both text and binary modes." +
-                    f"\n\tBinary: {not_binary_error}" +
-                    f"\n\tText: " + text_err_str
+                    "Failed to read KV3 file in text mode (binary magic didn't even match). " + str(text_error)
                 ) from text_error
         return rv
 
