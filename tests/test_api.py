@@ -9,6 +9,9 @@ def verify_example(text_kv3: keyvalues3.KV3File):
     assert isinstance(text_kv3.value, dict)
     assert text_kv3.value["boolValue"] == False
 
+    # dict proxy
+    assert text_kv3["boolValue"] == False
+
 def test_api_read_from_path():
     text_kv3 = keyvalues3.read("tests/documents/example.kv3")
     verify_example(text_kv3)

@@ -92,3 +92,51 @@ class Test_KV3Value(unittest.TestCase):
         textwriter.encode(KV3File(value=self.MyKV3Format(), format=self.MyKV3Format.format))
         textwriter.encode(KV3File(value=bytes(byte for byte in range(256))))
         textwriter.encode(KV3File(value=bytearray(byte for byte in range(256))))
+
+    def test_dict_proxy(self):
+        usual_kv3 = KV3File(value={'_class': 'CParticleSystemDefinition', 'b': 2, 'c': 3})
+        list_based_kv3 = KV3File(value=["a", "b", "c"])
+        leet_kv3 = KV3File(value=1337)
+
+        self.assertEqual(usual_kv3['_class'], "CParticleSystemDefinition")
+
+        self.assertSetEqual(set(usual_kv3.keys()), {'_class', 'b', 'c'})
+        self.assertSetEqual(set(usual_kv3.values()), {'CParticleSystemDefinition', 2, 3})
+
+        self.assertEqual(repr([*usual_kv3.keys()]), "['_class', 'b', 'c']")
+        self.assertEqual(repr([*usual_kv3.values()]), "['CParticleSystemDefinition', 2, 3]")
+
+        self.assertEqual(repr(usual_kv3.keys()), "dict_keys(['_class', 'b', 'c'])")
+        self.assertEqual(repr(usual_kv3.values()), "dict_values(['CParticleSystemDefinition', 2, 3])")
+
+        with self.assertRaises(TypeError) as exception: list_based_kv3['a']
+        with self.assertRaises(TypeError) as exception: list_based_kv3[1]
+        with self.assertRaises(TypeError) as exception: list_based_kv3.keys()
+
+        self.assertTrue("KV3 root value is of type 'list'" in str(exception.exception))
+    
+        with self.assertRaises(TypeError) as exception: reversed(usual_kv3)
+        with self.assertRaises(TypeError) as exception: reversed(list_based_kv3)
+
+        null_kv3 = KV3File()
+        with self.assertRaises(TypeError): null_kv3["my"] = "value"
+        with self.assertRaises(TypeError): null_kv3["my"]
+        with self.assertRaises(TypeError): del null_kv3["my"]
+        with self.assertRaises(TypeError): len(null_kv3)
+        with self.assertRaises(TypeError): iter(null_kv3)
+
+        def pattern_match(v) -> str:
+            match v:
+                case KV3File(value={ '_class': 'CParticleSystemDefinition'}): return "particle system!"
+                case KV3File(value=list()): return "list based kv3"
+                case KV3File(value=None): return "null kv3"
+                case KV3File(value=1337): return "leet kv3"
+                case KV3File(): return "any other kv3"
+                case _: return "none of these"
+
+        self.assertEqual(pattern_match(usual_kv3), "particle system!")
+        self.assertEqual(pattern_match(list_based_kv3), "list based kv3")
+        self.assertEqual(pattern_match(leet_kv3), "leet kv3")
+        self.assertEqual(pattern_match(null_kv3), "null kv3")
+
+        self.assertEqual(pattern_match(KV3File("asd")), "any other kv3")
