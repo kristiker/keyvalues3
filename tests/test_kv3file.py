@@ -93,6 +93,16 @@ class Test_KV3Value(unittest.TestCase):
         textwriter.encode(KV3File(value=bytes(byte for byte in range(256))))
         textwriter.encode(KV3File(value=bytearray(byte for byte in range(256))))
 
+    def test_json_dump(self):
+        import json
+        my_kv = KV3File(value={'_class': 'CCompositeMaterialEditorDoc', 'key': 'value'})
+
+        # passes
+        json.dumps(my_kv.value)
+
+        # fails (is not JSON serializable)
+        with self.assertRaises(TypeError): json.dumps(my_kv)
+
     def test_dict_proxy(self):
         usual_kv3 = KV3File(value={'_class': 'CParticleSystemDefinition', 'b': 2, 'c': 3})
         list_based_kv3 = KV3File(value=["a", "b", "c"])
@@ -125,18 +135,26 @@ class Test_KV3Value(unittest.TestCase):
         with self.assertRaises(TypeError): len(null_kv3)
         with self.assertRaises(TypeError): iter(null_kv3)
 
-        def pattern_match(v) -> str:
+        class PMResult(enum.Enum):
+            PARTICLE_SYSTEM = enum.auto()
+            LIST_BASED = enum.auto()
+            LEET = enum.auto()
+            NULL = enum.auto()
+            ANY_OTHER = enum.auto()
+            NONE = enum.auto()
+
+        def pattern_match(v) -> PMResult:
             match v:
-                case KV3File(value={ '_class': 'CParticleSystemDefinition'}): return "particle system!"
-                case KV3File(value=list()): return "list based kv3"
-                case KV3File(value=None): return "null kv3"
-                case KV3File(value=1337): return "leet kv3"
-                case KV3File(): return "any other kv3"
-                case _: return "none of these"
+                case KV3File(value={ '_class': 'CParticleSystemDefinition'}): return PMResult.PARTICLE_SYSTEM
+                case KV3File(value=list()): return PMResult.LIST_BASED
+                case KV3File(value=None): return PMResult.NULL
+                case KV3File(value=1337): return PMResult.LEET
+                case KV3File(): return PMResult.ANY_OTHER
+                case _: return PMResult.NONE
 
-        self.assertEqual(pattern_match(usual_kv3), "particle system!")
-        self.assertEqual(pattern_match(list_based_kv3), "list based kv3")
-        self.assertEqual(pattern_match(leet_kv3), "leet kv3")
-        self.assertEqual(pattern_match(null_kv3), "null kv3")
+        self.assertEqual(pattern_match(usual_kv3), PMResult.PARTICLE_SYSTEM)
+        self.assertEqual(pattern_match(list_based_kv3), PMResult.LIST_BASED)
+        self.assertEqual(pattern_match(leet_kv3), PMResult.LEET)
+        self.assertEqual(pattern_match(null_kv3), PMResult.NULL)
 
-        self.assertEqual(pattern_match(KV3File("asd")), "any other kv3")
+        self.assertEqual(pattern_match(KV3File("asd")), PMResult.ANY_OTHER)
