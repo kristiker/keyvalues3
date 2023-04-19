@@ -14,6 +14,7 @@ dict_keys(['default', 'low', 'fair', 'normal', 'tough', 'hard', 'very_hard', 'ex
 ```
 
 ```py
+# The root value is most of the time a dict
 >>> type(bt_config.value)
 <class 'dict'>
 
