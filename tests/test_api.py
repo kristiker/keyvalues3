@@ -40,8 +40,35 @@ def test_api_read_binary():
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["binary"] == "reader"
 
-    with pytest.raises(NotImplementedError):
+    # good magic, but not implemented
+    with pytest.raises(NotImplementedError, match="Unsupported binary KV3 magic"):
         keyvalues3.read("tests/documents/binary/lightmap_query_data.kv3")
 
+    # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
         keyvalues3.read(io.BytesIO(b"VDF3\x01\x03\x03\x07"))
+
+
+def test_api_write():
+    my_object = {
+        "_class": "HelloWorld",
+    }
+
+    with io.BytesIO() as my_stream:
+        keyvalues3.write(my_object, my_stream)
+
+    with io.StringIO() as my_stream:
+        keyvalues3.write(my_object, my_stream)
+
+    import tempfile
+    with tempfile.TemporaryFile("w") as fp: keyvalues3.write(my_object, fp.file)
+    with tempfile.TemporaryFile("wb") as fp: keyvalues3.write(my_object, fp.file)
+
+    null_VKV = b'VKV\x03\x00\x05\x86\x1b\xd8\xf7\xc1@\xad\x82u\xa4\x82g\xe7\x14|\x16\x12t\xe9\x06\x98F\xaf\xf2\xe6>\xb5\x907\xe7\x00\x00\x00\x00\x01\xFF\xFF\xFF\xFF'
+    with io.BytesIO(null_VKV) as my_stream:
+        keyvalues3.write(
+            None,
+            my_stream,
+            keyvalues3.ENCODING_BINARY_UNCOMPRESSED
+        )
+        assert my_stream.getvalue() == null_VKV

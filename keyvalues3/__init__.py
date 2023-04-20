@@ -12,6 +12,8 @@ from . import textwriter
 __version__ = "0.1a1"
 __all__ = [ "read", "write" ]
 
+#region: read
+
 @typing.overload
 def read(text_stream: typing.TextIO) -> KV3File:
     """Read a text KV3 stream."""
@@ -24,7 +26,7 @@ def read(binary_stream: typing.BinaryIO) -> KV3File:
 def read(path: str | os.PathLike) -> KV3File:
     """
     Read a text or binary KV3 file from a path.
-    
+
     If a binary magic is present, read in binary mode, otherwise text.
 
     Raises:
@@ -39,7 +41,7 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
 
         if not BinaryMagics.is_defined(magic):
             raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
-    
+
         if magic != BinaryMagics.VKV3:
             raise NotImplementedError("Unsupported binary KV3 magic: " + repr(magic))
 
@@ -68,14 +70,59 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
                 ) from text_error
         return rv
 
-def write(kv3: KV3File | ValueType, path: str | os.PathLike, encoding: Encoding = ENCODING_TEXT, format: Format = FORMAT_GENERIC):
-    raise NotImplementedError()
+#endregion
+
+#region: write
+
+def write(kv3: KV3File | ValueType, path_or_stream: str | os.PathLike | typing.IO, encoding: Encoding = ENCODING_TEXT, *,
+          format: Format = FORMAT_GENERIC,
+          use_original_encoding: bool = False
+    ):
+    """
+    Write a KV3File to a file or stream.
+
+    Args:
+        kv3: The KV3File or KV3 value to write.
+        path: The path to write to.
+        encoding: The encoding to use.
+        format: If kv3 passed is not a file, this is the format to build it with.
+    """
+
     if not isinstance(kv3, KV3File):
         kv3 = KV3File(kv3, format=format, validate_value=True)
 
+    if use_original_encoding:
+        encoding = kv3file.original_encoding
+        if encoding is None:
+            raise ValueError("Cannot use original encoding if provided kv3 doesn't have one.")
+
+    # TODO: clean this up with a context manager
+    fp = None
+    is_file = False
+
+    match path_or_stream:
+        case io.IOBase():
+            fp = path_or_stream
+        case str():
+            fp = open(path_or_stream, "wb")
+            is_file = True
+        case _:
+            raise TypeError("Argument path_or_stream must be a path or stream")
+
     if encoding == ENCODING_TEXT:
-        textwriter.encode(kv3)
+        text_result = textwriter.encode(kv3)
+        if isinstance(fp, io.TextIOBase):
+            fp.write(text_result)
+        else:
+            fp.write(text_result.encode("utf-8"))
     elif encoding == ENCODING_BINARY_UNCOMPRESSED:
-       binarywriter.BinaryV1UncompressedWriter(kv3).write(None)
+       binarywriter.BinaryV1UncompressedWriter(kv3).write(fp)
     elif encoding == ENCODING_BINARY_BLOCK_LZ4:
-        binarywriter.BinaryLZ4(kv3).write(None)
+        binarywriter.BinaryLZ4(kv3).write(fp)
+    else:
+        raise NotImplementedError(f"Encoding type {encoding} not implemented.")
+    
+    if is_file:
+        fp.close()
+
+#endregion
