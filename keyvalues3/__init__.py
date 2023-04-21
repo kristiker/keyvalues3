@@ -83,9 +83,11 @@ def write(kv3: KV3File | ValueType, path_or_stream: str | os.PathLike | typing.I
 
     Args:
         kv3: The KV3File or KV3 value to write.
-        path: The path to write to.
+        path_or_stream: The file path to write to. Or a text/binary stream.
         encoding: The encoding to use.
-        format: If kv3 passed is not a file, this is the format to build it with.
+
+        format: If a raw kv3 value is passed, this is the format to build it with. Default is 'generic'.
+        use_original_encoding: If a kv3 file is passed, use its original encoding.
     """
 
     if not isinstance(kv3, KV3File):
@@ -115,12 +117,15 @@ def write(kv3: KV3File | ValueType, path_or_stream: str | os.PathLike | typing.I
             fp.write(text_result)
         else:
             fp.write(text_result.encode("utf-8"))
-    elif encoding == ENCODING_BINARY_UNCOMPRESSED:
-       binarywriter.BinaryV1UncompressedWriter(kv3).write(fp)
-    elif encoding == ENCODING_BINARY_BLOCK_LZ4:
-        binarywriter.BinaryLZ4(kv3).write(fp)
     else:
-        raise NotImplementedError(f"Encoding type {encoding} not implemented.")
+        if isinstance(fp, io.TextIOBase):
+            raise TypeError("Cannot write binary KV3 to a text stream. If this is a file, please open it in binary mode ('wb').")
+        if encoding == ENCODING_BINARY_UNCOMPRESSED:
+            binarywriter.BinaryV1UncompressedWriter(kv3).write(fp)
+        elif encoding == ENCODING_BINARY_BLOCK_LZ4:
+            binarywriter.BinaryLZ4(kv3).write(fp)
+        else:
+            raise NotImplementedError(f"Encoding type {encoding} not implemented.")
     
     if is_file:
         fp.close()
