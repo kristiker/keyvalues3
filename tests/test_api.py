@@ -61,8 +61,8 @@ def test_api_write():
         keyvalues3.write(my_object, my_stream)
 
     import tempfile
-    with tempfile.TemporaryFile("w") as fp: keyvalues3.write(my_object, fp.file)
-    with tempfile.TemporaryFile("wb") as fp: keyvalues3.write(my_object, fp.file)
+    with tempfile.TemporaryFile("w") as fp: keyvalues3.write(my_object, getattr(fp, "file", fp))
+    with tempfile.TemporaryFile("wb") as fp: keyvalues3.write(my_object, getattr(fp, "file", fp))
 
     null_VKV = b'VKV\x03\x00\x05\x86\x1b\xd8\xf7\xc1@\xad\x82u\xa4\x82g\xe7\x14|\x16\x12t\xe9\x06\x98F\xaf\xf2\xe6>\xb5\x907\xe7\x00\x00\x00\x00\x01\xFF\xFF\xFF\xFF'
     with io.BytesIO(null_VKV) as my_stream:
