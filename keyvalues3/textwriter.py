@@ -71,5 +71,5 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
             case _:
                 raise TypeError(f"Invalid type {type(value)} for KV3 value.")
 
-    text += value_serialize(value)
+    text += value_serialize(value) + '\n'
     return text
