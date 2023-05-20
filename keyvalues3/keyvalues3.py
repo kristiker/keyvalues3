@@ -72,8 +72,6 @@ def check_valid(value: ValueType):
                     raise ValueError("dict contains itself")
                 if not isinstance(key, str):
                     raise ValueError(f"dict key is not a string type, but {type(key)}")
-                if not key.isidentifier():
-                    raise ValueError(f"dict key '{key}' is not accepted (not a valid identifier)") # TODO: spaces and . are allowed
                 check_valid(nested_value)
         case array.array() | bytes() | bytearray():
             pass

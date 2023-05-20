@@ -24,4 +24,7 @@ Lorem ipsum \a \b \c \n ' " "" 😊
             /* multi
             line
             comment */
+
+            "quoted key" = 5
+            key.com = 5
         }

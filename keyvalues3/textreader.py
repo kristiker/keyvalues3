@@ -10,16 +10,17 @@ common = """
         items = (ws* data ws* ",")* ws* (data ws*)?
     dict = "{" ws* pair* "}"
         pair = key ws* "=" ws* data ws*
-            key = (identifier / string)
+            key = (identifier / quoted_string)
 
+    # TODO: only one flag
     value_flagged = (flags ":") value
         flags = (identifier "|")* identifier
-    value = null / true / false / number / multiline_string / string / dict / array / binary_blob
+    value = null / true / false / number / multiline_string / quoted_string / dict / array / binary_blob
         null = "null"
         true = "true"
         false = "false"
         number = ~r"[+-]?" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
-        string = ~r'"[^"]*"'
+        quoted_string = ~r'"[^"]*"'
         multiline_string = ~r'\"{3}\\r?\\n(.*?)\\"{3}'us
         binary_blob = '#[' ws* (~r'[A-F0-9a-f]{2}' ws*)* ']'
 
@@ -27,7 +28,7 @@ common = """
     single_line_comment = ~r"//.*?\\n"
     multi_line_comment = ~r"/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"
 
-    identifier = ~r"[a-zA-Z0-9_]+"i
+    identifier = ~r"[a-zA-Z0-9_.]+"i
     """
 
 kv3grammar = parsimonious.Grammar(
@@ -130,7 +131,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return int(sign + groups[0])
         return float(sign + groups[0])
 
-    def visit_string(self, node, _): return node.text[1:-1]
+    def visit_quoted_string(self, node, _): return node.text[1:-1]
     def visit_multiline_string(self, node, _):
         return kv3.flagged_value(node.match.group(1), kv3.Flag.multilinestring)
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
@@ -166,6 +167,8 @@ class KV3TextReader(parsimonious.NodeVisitor):
         return next(it), next(it)
 
     def visit_key(self, node, _) -> str:
+        if (node.children[0].expr_name == 'quoted_string'):
+            return node.text[1:-1]
         return node.text
 
     def generic_visit(self, node, visited_children):

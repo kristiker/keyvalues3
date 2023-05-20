@@ -33,7 +33,7 @@ class Test_KV3Value(unittest.TestCase):
     def test_kv3_value_validity(self):
         with self.assertRaises(TypeError):  check_valid(value=(5, 6, 7))
         with self.assertRaises(TypeError):  check_valid(value=flagged_value(set(), Flag(1)))
-        with self.assertRaises(ValueError): check_valid(value={"key with space": 5})
+        #with self.assertRaises(ValueError): check_valid(value={"key with space": 5})
         self.assertTrue(is_valid(value=None))
         self.assertTrue(is_valid(value=True))
         self.assertTrue(is_valid(value=False))
@@ -50,7 +50,6 @@ class Test_KV3Value(unittest.TestCase):
         #self.assertFalse(is_valid(float('inf')))
         self.assertFalse(is_valid(2**64))
         self.assertFalse(is_valid(-1 + -2**63))
-        self.assertFalse(is_valid({"key with space": 5}))
         self.assertFalse(is_valid([set(), set(), set()]))
         self.assertFalse(is_valid(KV3File))
         self.assertFalse(is_valid(KV3File()))
