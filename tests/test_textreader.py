@@ -105,7 +105,7 @@ class Test_TextReadWriting(unittest.TestCase):
         n = 5
         s = "foo"
     }
-}""".strip().replace(" "*4, "\t")
+}""".strip().replace(" "*4, "\t") + "\n"
     
     def test_prints_back_same_kv3_header(self):
         value = KV3TextReader().parse(default_header + self.kv3text)

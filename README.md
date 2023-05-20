@@ -27,7 +27,7 @@ Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 # To write it back
 >>> kv3.write(bt_config, "tests/documents/bt_config.kv3", use_original_encoding=True)
 
-# Write to stream
+# Write to a stream
 >>> import sys
 >>> kv3.write({"key": [1,2,3]}, sys.stdout)
 <!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->

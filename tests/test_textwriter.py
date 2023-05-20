@@ -11,40 +11,40 @@ def test_text_writer_header():
 
 def test_text_writer_writes_null():
     null_kv3 = KV3File(None)
-    expected_text = default_header + "\nnull"
+    expected_text = default_header + "\nnull\n"
     assert textwriter.encode(null_kv3) == expected_text
 
 def test_text_writer_writes_empty_list():
     empty_list_kv3 = KV3File([])
-    expected_text = default_header + "\n[]"
+    expected_text = default_header + "\n[]\n"
     assert textwriter.encode(empty_list_kv3) == expected_text
 
 def test_text_writer_writes_empty_string():
     empty_string_kv3 = KV3File("")
-    expected_text = default_header + '\n""'
+    expected_text = default_header + '\n""\n'
     assert textwriter.encode(empty_string_kv3) == expected_text
 
 def test_text_writer_writes_int():
     int_kv3 = KV3File(1337)
-    expected_text = default_header + "\n1337"
+    expected_text = default_header + "\n1337\n"
     assert textwriter.encode(int_kv3) == expected_text
 
 def test_text_writer_writes_float():
     float_kv3 = KV3File(1337.1337)
-    expected_text = default_header + "\n1337.1337"
+    expected_text = default_header + "\n1337.1337\n"
     assert textwriter.encode(float_kv3) == expected_text
 
 def test_text_writer_writes_bool():
     true_kv3 = KV3File(True)
     false_kv3 = KV3File(False)
-    expected_text_true = default_header + "\ntrue"
-    expected_text_false = default_header + "\nfalse"
+    expected_text_true = default_header + "\ntrue\n"
+    expected_text_false = default_header + "\nfalse\n"
     assert textwriter.encode(true_kv3) == expected_text_true
     assert textwriter.encode(false_kv3) == expected_text_false
 
 def test_text_writer_writes_dict():
     empty_dict_kv3 = KV3File({})
-    expected_empty_dict_text = default_header + "\n{\n}"
+    expected_empty_dict_text = default_header + "\n{\n}\n"
     assert textwriter.encode(empty_dict_kv3) == expected_empty_dict_text
 
     @dataclasses.dataclass
@@ -76,6 +76,7 @@ def test_text_writer_writes_dict():
         """.strip() # undo detached triple quotes
         .replace(" "*4, "\t") # convert to tabs
         .replace("\n"+"\t"*2, "\n") # remove added indent
+        + "\n"
     )
     assert textwriter.encode(dict_kv3) == expected_dict_kv3_text
     assert textwriter.encode(dataclass_kv3) == expected_dict_kv3_text
