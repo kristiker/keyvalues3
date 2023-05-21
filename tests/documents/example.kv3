@@ -27,4 +27,10 @@ Lorem ipsum \a \b \c \n ' " "" 😊
 
             "quoted key" = 5
             key.com = 5
+
+            "escaped \" quote in key" = 5
+            "escaped \n newline in key" = 5
+            "escaped \\ backslash in key" = 5
+
+            string_with_inner_double_quotes = "foo \"bar\"" // comment
         }

@@ -36,6 +36,15 @@ class Test_TextReading(unittest.TestCase):
             self.assertIsInstance(kv["emptyMultiLineString"], kv3.flagged_value)
             self.assertEqual(kv["emptyMultiLineString"].value, "")
             self.assertEqual(kv["emptyMultiLineString"].flags, kv3.Flag.multilinestring)
+            
+            self.assertIn("quoted key", kv)
+            self.assertIn("key.com", kv)
+
+            self.assertIn('escaped " quote in key', kv)
+            self.assertIn("escaped \n newline in key", kv)
+            self.assertIn("escaped \\ backslash in key", kv)
+
+            self.assertEqual(kv["string_with_inner_double_quotes"], 'foo "bar"')
 
     def test_parses_example_kv3_no_header(self):
         with open("tests/documents/example_noheader.kv3", "r", encoding="utf-8") as f:
@@ -157,6 +166,11 @@ for kv3file in itertools.chain(
         vpcf_to_compile = (workdir / kv3file.name).with_suffix('.vpcf')
         shutil.copy(kv3file, vpcf_to_compile)
         vpfc_files.append((vpcf_to_compile, *parameters))
+
+# debug mode has some additional calls?
+import sys
+if sys.gettrace() is not None:
+    sys.setrecursionlimit(sys.getrecursionlimit() + 10)
 
 #@pytest.mark.skipif(resourcecompiler.is_file() == True, reason="prioritizing [test_parity]")
 @pytest.mark.parametrize("file,assumed_valid,no_header", kv3_files, ids=[f"'{f.name}'-{v}{n}" for f, v, n in kv3_files])

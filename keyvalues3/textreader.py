@@ -20,7 +20,9 @@ common = """
         true = "true"
         false = "false"
         number = ~r"[+-]?" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
-        quoted_string = ~r'"[^"]*"'
+        quoted_string = ~r'"(?:[^"\\\\]|\\\\.)*"'
+        #quoted_string_old_no_escaped = ~r'"[^"]*"'
+    
         multiline_string = ~r'\"{3}\\r?\\n(.*?)\\"{3}'us
         binary_blob = '#[' ws* (~r'[A-F0-9a-f]{2}' ws*)* ']'
 
@@ -131,7 +133,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return int(sign + groups[0])
         return float(sign + groups[0])
 
-    def visit_quoted_string(self, node, _): return node.text[1:-1]
+    def visit_quoted_string(self, node, _): return node.text[1:-1].encode('raw_unicode_escape').decode('unicode_escape')
     def visit_multiline_string(self, node, _):
         return kv3.flagged_value(node.match.group(1), kv3.Flag.multilinestring)
     #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
@@ -166,9 +168,10 @@ class KV3TextReader(parsimonious.NodeVisitor):
         it = (child for child in visited_children if self.is_object(child))
         return next(it), next(it)
 
-    def visit_key(self, node, _) -> str:
-        if (node.children[0].expr_name == 'quoted_string'):
-            return node.text[1:-1]
+    def visit_key(self, node, maybe_quoted_string: list_of_nodes) -> str:
+        # str or RegexNode
+        if isinstance(maybe_quoted_string[0], str):
+            return maybe_quoted_string[0]
         return node.text
 
     def generic_visit(self, node, visited_children):
