@@ -83,3 +83,9 @@ def test_text_writer_writes_dict():
 
     assert '"key with spaces"' in textwriter.encode({"key with spaces": 5})
     assert '"key.co.uk" =' in textwriter.encode({"key.co.uk": 5})
+
+    assert (key:="escaped \" quote in key") in textwriter.encode({key: 5})
+    assert (key:="escaped \n newline in key") in textwriter.encode({key: 5})
+    assert (key:="escaped \\ backslash in key") in textwriter.encode({key: 5})
+
+    assert (value:="foo \"bar\"") in textwriter.encode({"key": value})
