@@ -82,4 +82,4 @@ def test_text_writer_writes_dict():
     assert textwriter.encode(dataclass_kv3) == expected_dict_kv3_text
 
     assert '"key with spaces"' in textwriter.encode({"key with spaces": 5})
-    assert 'key.co.uk =' in textwriter.encode({"key.co.uk": 5})
+    assert '"key.co.uk" =' in textwriter.encode({"key.co.uk": 5})

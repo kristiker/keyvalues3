@@ -62,7 +62,7 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
                 if dictionary_value:
                     s = "\n" + s
                 for key, value in value.items():
-                    if ' ' in key:
+                    if not key.isidentifier():
                         key = '"' + key + '"'
                     s += indent_nested + f"{key} = {value_serialize(value, indentation_level+1, dictionary_value=True)}\n"
                 return s + indent + "}"
