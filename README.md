@@ -36,7 +36,7 @@ Format(name='generic', version=UUID('7412167c-06e9-4698-aff2-e63eb59037e7'))
 }
 ```
 
-## Install
+## Install  [![PyPI version](https://badge.fury.io/py/keyvalues3.svg)](https://badge.fury.io/py/keyvalues3)
 ```bash
 pip install keyvalues3
 ```
