@@ -51,5 +51,5 @@ pip install keyvalues3
 | Binary (Other newer) | No ⛔ | No ⛔ |
 
 ## Credits
-Valve Corporation for making KeyValues3.  
-[SteamDatabase/ValveResourceFormat](https://github.com/SteamDatabase/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/ResourceTypes/BinaryKV3.cs) for reversing the binary formats.
+Valve Corporation® for making KeyValues3.  
+[ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/ResourceTypes/BinaryKV3.cs) for reverse engineering the binary formats.
