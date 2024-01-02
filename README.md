@@ -50,6 +50,29 @@ pip install keyvalues3
 | Binary LZ4 | No ⛔ | Yes ✔️ |
 | Binary (Other newer) | No ⛔ | No ⛔ |
 
+## Using dataclasses
+Dataclasses (marked with `@dataclass`) are also supported for serialization.
+```py
+@dataclass
+class RenderMeshFile(_Node):  # _Node defines _class, name, notes, and children (+ helper methods)
+    filename: resourcepath = ""
+    import_translation: list[float] = field(default_factory=lambda: [0, 0, 0])
+    import_rotation: list[float] = field(default_factory=lambda: [0, 0, 0])
+    import_scale: float = 1.0
+    align_origin_x_type: str = "None"
+    align_origin_y_type: str = "None"
+    align_origin_z_type: str = "None"
+    parent_bone: namelink = ""
+    import_filter: dict = field(
+        default_factory=lambda:dict(
+            exclude_by_default = False,
+            exception_list = [  ]
+        )
+    )
+```
+You can find more ModelDoc dataclasses [here](https://github.com/kristiker/source1import/blob/6644b3133cc79b3c455cc91ab4259f3f0e27d797/utils/shared/modeldoc.py#L61-L88).
+
+
 ## Credits
 Valve Corporation® for making KeyValues3.  
 [ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/ResourceTypes/BinaryKV3.cs) for reverse engineering the binary formats.
