@@ -51,7 +51,7 @@ pip install keyvalues3
 | Binary (Other newer) | No ⛔ | No ⛔ |
 
 ## Using dataclasses
-Dataclasses (marked with `@dataclass`) are also supported for serialization.
+Dataclasses (marked with `@dataclass`) are also supported for serialization (uses `asdict()`)
 ```py
 @dataclass
 class RenderMeshFile(_Node):  # _Node defines _class, name, notes, and children (+ helper methods)
