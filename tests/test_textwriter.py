@@ -42,6 +42,39 @@ def test_text_writer_writes_bool():
     assert textwriter.encode(true_kv3) == expected_text_true
     assert textwriter.encode(false_kv3) == expected_text_false
 
+def test_text_writer_list_indentation():
+    data = {
+        "use_distance_volume_mapping_curve": True,
+        "distance_volume_mapping_curve":
+        [
+            [ 0, 1, 0, 0, 2, 3, ],
+            [ 100, 1, 0, 0, 2, 3, ],
+            [ 900, 0.5, 0, 0, 2, 3, ],
+            [ 1300, 0.04, 0, 0, 2, 3, ],
+            [ 1700, 0, 0, 0, 2, 3, ],
+        ] 
+    }
+
+    # the kv3 should be formatted roughly like above
+    expected_soundevent_kv3 = util_make_indented_kv3("""
+    {
+        use_distance_volume_mapping_curve = true
+        distance_volume_mapping_curve = 
+        [
+            [0, 1, 0, 0, 2, 3],
+            [100, 1, 0, 0, 2, 3],
+            [900, 0.5, 0, 0, 2, 3],
+            [1300, 0.04, 0, 0, 2, 3],
+            [1700, 0, 0, 0, 2, 3],
+        ]
+    }
+    """)
+
+    kv3 = KV3File(data)
+    kv3_text = textwriter.encode(kv3)
+    #print(kv3_text)
+    assert kv3_text == expected_soundevent_kv3
+
 def test_text_writer_writes_dict():
     empty_dict_kv3 = KV3File({})
     expected_empty_dict_text = default_header + "\n{\n}\n"
@@ -64,20 +97,20 @@ def test_text_writer_writes_dict():
             'c': ["listed_text1", "listed_text2"]
         }
     )
-    expected_dict_kv3_text = (default_header + "\n" + """
+    expected_dict_kv3_text = util_make_indented_kv3("""
         {
             a = "asd asd"
             b = 
             {
                 inner_b = 3
             }
-            c = ["listed_text1", "listed_text2"]
+            c = 
+            [
+                "listed_text1",
+                "listed_text2",
+            ]
         }
-        """.strip() # undo detached triple quotes
-        .replace(" "*4, "\t") # convert to tabs
-        .replace("\n"+"\t"*2, "\n") # remove added indent
-        + "\n"
-    )
+    """, 2)
     assert textwriter.encode(dict_kv3) == expected_dict_kv3_text
     assert textwriter.encode(dataclass_kv3) == expected_dict_kv3_text
 
@@ -89,3 +122,12 @@ def test_text_writer_writes_dict():
     assert (key:="escaped \\ backslash in key") in textwriter.encode({key: 5})
 
     assert (value:="foo \"bar\"") in textwriter.encode({"key": value})
+
+
+def util_make_indented_kv3(code_kv3: str, code_indentation_level=1) -> str:
+    return (default_header + "\n" + code_kv3
+            .strip() # undo detached triple quotes
+            .replace(" "*4, "\t") # convert to tabs
+            .replace("\n"+"\t"*code_indentation_level, "\n") # remove added indent
+            + "\n" # add newline at end
+    )

@@ -50,7 +50,8 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
             case str():
                 return '"' + value + '"'
             case list():
-                qualifies_for_sameline = len(value) <= 4 and all(isinstance(item, (dict)) == False for item in value)
+                # should we check only the first value?
+                qualifies_for_sameline = len(value) <= 6 and all(isinstance(item, (int, float)) == True for item in value)
                 if qualifies_for_sameline:
                     return "[" + ", ".join(value_serialize(item) for item in value) + "]"
                 s = f"\n{indent}[\n"
