@@ -1,4 +1,3 @@
-
 import array
 import enum
 import keyvalues3 as kv3
@@ -23,51 +22,44 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
     if not options.no_header:
         text += str(kv3.KV3Header(encoding=encoding, format=format)) + "\n"
 
-    def value_serialize(value: kv3.ValueType, indentation_level = 0, dictionary_value = False) -> str:
-        indent = ("\t" * (indentation_level))
-        indent_nested = ("\t" * (indentation_level + 1))
+    def value_serialize(value: kv3.ValueType, indentation_level=0, dictionary_value=False, nested_list=False) -> str:
+        indent = "\t" * indentation_level
+        indent_nested = "\t" * (indentation_level + 1)
         match value:
             case kv3.flagged_value(value, flags):
                 if flags & kv3.Flag.multilinestring:
-                    return  f'"""\n{value}"""'
+                    return f'"""\n{value}"""'
                 if flags:
-                    return f"{flags}:{value_serialize(value)}"
-                return value_serialize(value)
+                    return f"{flags}:{value_serialize(value, indentation_level, dictionary_value, nested_list)}"
+                return value_serialize(value, indentation_level, dictionary_value, nested_list)
             case None:
                 return "null"
             case False:
                 return "false"
             case True:
                 return "true"
-            case int():
-                return str(value)
-            case float():
-                return str(round(value, 6))
+            case int() | float():
+                return str(round(value, 8) if isinstance(value, float) else value)
             case enum.IntEnum():
-                if options.serialize_enums_as_ints:
-                    return str(value.value)
-                return value.name
+                return str(value.value) if options.serialize_enums_as_ints else value.name
             case str():
-                return '"' + value + '"'
+                return f'"{value}"'
             case list():
-                qualifies_for_sameline = len(value) <= 4 and all(isinstance(item, (dict)) == False for item in value)
-                if qualifies_for_sameline:
-                    return "[" + ", ".join(value_serialize(item) for item in value) + "]"
+                if nested_list:
+                    return "[" + ", ".join(value_serialize(item, indentation_level, dictionary_value, nested_list) for item in value) + "]"
                 s = f"\n{indent}[\n"
-                for item in value:
-                    s += indent_nested + (value_serialize(item, indentation_level+1) + ",\n")
-                return s + indent + "]"
+                s += ",\n".join(indent_nested + value_serialize(item, indentation_level + 1, dictionary_value, nested_list=True) for item in value)
+                return s + f"\n{indent}]"
             case dict():
                 s = indent + "{\n"
                 if dictionary_value:
                     s = "\n" + s
                 for key, value in value.items():
-                    if not key.isidentifier():
-                        key = '"' + key + '"'
-                    s += indent_nested + f"{key} = {value_serialize(value, indentation_level+1, dictionary_value=True)}\n"
+                    key = f'"{key}"' if not key.isidentifier() else key
+                    s += indent_nested + f"{key} = {value_serialize(value, indentation_level + 1, dictionary_value=True, nested_list=nested_list)}\n"
                 return s + indent + "}"
             case array.array():
-                return "[ ]" # TODO
+                return "[ ]"  # TODO
             case bytes() | bytearray():
                 return f"#[{' '.join(f'{b:02x}' for b in value)}]"
             case _:
