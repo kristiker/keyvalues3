@@ -105,7 +105,11 @@ def test_text_writer_writes_dict():
         {
             inner_b = 3
         }
-        c = ["listed_text1", "listed_text2"]
+        c = 
+        [
+            "listed_text1",
+            "listed_text2",
+        ]
     }
     """)
     assert textwriter.encode(dict_kv3) == expected_dict_kv3_text
