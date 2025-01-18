@@ -58,13 +58,13 @@ def test_text_writer_list_indentation():
     expected_soundevent_kv3 = util_make_indented_kv3("""
     {
         use_distance_volume_mapping_curve = true
-        distance_volume_mapping_curve =
+        distance_volume_mapping_curve = 
         [
-            [ 0, 1, 0, 0, 2, 3, ],
-            [ 100, 1, 0, 0, 2, 3, ],
-            [ 900, 0.5, 0, 0, 2, 3, ],
-            [ 1300, 0.04, 0, 0, 2, 3, ],
-            [ 1700, 0, 0, 0, 2, 3, ],
+            [0, 1, 0, 0, 2, 3],
+            [100, 1, 0, 0, 2, 3],
+            [900, 0.5, 0, 0, 2, 3],
+            [1300, 0.04, 0, 0, 2, 3],
+            [1700, 0, 0, 0, 2, 3],
         ]
     }
     """)
@@ -73,8 +73,8 @@ def test_text_writer_list_indentation():
 
     kv3 = KV3File(data)
     kv3_text = textwriter.encode(kv3)
-    #assert kv3_text == expected_soundevent_kv3
-    assert True
+    #print(kv3_text)
+    assert kv3_text == expected_soundevent_kv3
 
 def test_text_writer_writes_dict():
     empty_dict_kv3 = KV3File({})
