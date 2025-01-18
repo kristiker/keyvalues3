@@ -55,6 +55,7 @@ def test_text_writer_list_indentation():
         ] 
     }
 
+    # the kv3 should be formatted roughly like above
     expected_soundevent_kv3 = util_make_indented_kv3("""
     {
         use_distance_volume_mapping_curve = true
@@ -68,8 +69,6 @@ def test_text_writer_list_indentation():
         ]
     }
     """)
-
-    # the kv3 should be formatted roughly like above
 
     kv3 = KV3File(data)
     kv3_text = textwriter.encode(kv3)
@@ -99,19 +98,19 @@ def test_text_writer_writes_dict():
         }
     )
     expected_dict_kv3_text = util_make_indented_kv3("""
-    {
-        a = "asd asd"
-        b = 
         {
-            inner_b = 3
+            a = "asd asd"
+            b = 
+            {
+                inner_b = 3
+            }
+            c = 
+            [
+                "listed_text1",
+                "listed_text2",
+            ]
         }
-        c = 
-        [
-            "listed_text1",
-            "listed_text2",
-        ]
-    }
-    """)
+    """, 2)
     assert textwriter.encode(dict_kv3) == expected_dict_kv3_text
     assert textwriter.encode(dataclass_kv3) == expected_dict_kv3_text
 
