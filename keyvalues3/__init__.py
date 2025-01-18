@@ -131,3 +131,9 @@ def write(kv3: KV3File | ValueType, path_or_stream: str | os.PathLike | typing.I
         fp.close()
 
 #endregion
+
+def from_value(data: dict | list | str | int | float | bool | None) -> KV3File:
+    """
+    Create a KV3File from a dictionary or other type of value.
+    """
+    return KV3File(data, validate_value=False)

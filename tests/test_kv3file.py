@@ -20,7 +20,10 @@ class Test_KV3File(unittest.TestCase):
         assert kv3_null_implicit.value is None
         assert kv3_null.value is None
 
-class Test_KV3Value(unittest.TestCase):
+    def test_initialize_from_helper(self):
+        import keyvalues3 as kv3
+        kv = kv3.from_value({'a': 'b'})
+        assert kv['a'] == 'b'
     
     @dataclasses.dataclass
     class MyKV3Format:
