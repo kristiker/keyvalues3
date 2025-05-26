@@ -105,7 +105,7 @@ class flagged_value():
     __match_args__ = __slots__ = ("value", "flags")
 
     def __init__(self, value: ValueType, flags: Flag = Flag(0)):
-        #assert flags.bit_count() == 1, "only one flag is allowed"
+        # assert flags.bit_count() == 1, "only one flag is allowed"
         assert isinstance(value, flagged_value) == False, "value should not be already flagged"
         self.value = value
         self.flags = flags
@@ -117,5 +117,9 @@ class flagged_value():
             if self.flags == Flag(0) or self.flags == Flag.multilinestring:
                 return self.value == other
             return False
+
+    def __str__(self) -> str:
+        return f"{self.flags}:{self.value}"
+
 
 ValueType = ValueType | flagged_value
