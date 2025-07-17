@@ -13,7 +13,7 @@ common = """
             key = (identifier / quoted_string)
 
     # TODO: only one flag
-    value_flagged = (flags ":") value
+    value_flagged = (flags ":" ws*) value
         flags = (identifier "|")* identifier
     value = null / true / false / number / multiline_string / quoted_string / dict / array / binary_blob
         null = "null"
