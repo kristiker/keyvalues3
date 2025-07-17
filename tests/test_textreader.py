@@ -81,7 +81,7 @@ class Test_TextReading(unittest.TestCase):
             bytes(b"\xDE\xAD\xBE\xEF")
         )
     
-    def test_multiline_strngs(self):
+    def test_multiline_strings(self):
         with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""')
         with self.assertRaises(Exception): KV3TextReader().parse(default_header + '""""')
         with self.assertRaises(Exception): KV3TextReader().parse(default_header + '"""""')
@@ -95,6 +95,9 @@ class Test_TextReading(unittest.TestCase):
         assert KV3TextReader().parse(default_header + '"""\r\n"""').value == ""
         assert KV3TextReader().parse(default_header + '"""\na"""').value == "a"
         assert KV3TextReader().parse(default_header + '"""\na\n"""').value == "a\n"
+
+    def test_escape_character_in_string(self):
+        assert KV3TextReader().parse(default_header + '"\"').value == '\\'
 
 
 class Test_TextReadWriting(unittest.TestCase):
