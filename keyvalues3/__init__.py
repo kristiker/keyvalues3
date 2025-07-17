@@ -9,7 +9,7 @@ from .binarywriter import BinaryMagics
 from .textreader import KV3TextReader
 from . import textwriter
 
-__version__ = "0.2"
+__version__ = "0.3"
 __all__ = [ "read", "write" ]
 
 #region: read
