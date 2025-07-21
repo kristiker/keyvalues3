@@ -15,7 +15,7 @@ class BinaryMagics(bytes, enum.Enum):
     def is_defined(cls, magic: bytes):
         return magic in cls._value2member_map_
 
-class BinaryTypes(enum.IntEnum):
+class BinaryType(enum.IntEnum):
     null = 1
     boolean = 2
     int64 = 3
@@ -34,24 +34,31 @@ class BinaryTypes(enum.IntEnum):
     int64_one = 16
     double_zero = 17
     double_one = 18
+    float = 19
+    int16 = 20
+    uint16 = 21
+    int8 = 22
+    uint8 = 23
+    array_typed_byte_length = 24
+    array_typed_byte_length2 = 25
 
-types = {
-    int: BinaryTypes.int64,
-    float: BinaryTypes.double,
-    str: BinaryTypes.string,
-    list: BinaryTypes.array,
-    array.array: BinaryTypes.array_typed,
-    dict: BinaryTypes.dictionary,
+types: dict = {
+    int: BinaryType.int64,
+    float: BinaryType.double,
+    str: BinaryType.string,
+    list: BinaryType.array,
+    array.array: BinaryType.array_typed,
+    dict: BinaryType.dictionary,
 }
 
 zeros_ones = {
     int: {
-        0: BinaryTypes.int64_zero,
-        1: BinaryTypes.int64_one,
+        0: BinaryType.int64_zero,
+        1: BinaryType.int64_one,
     },
     float: {
-        0.0: BinaryTypes.double_zero,
-        1.0: BinaryTypes.double_one,
+        0.0: BinaryType.double_zero,
+        1.0: BinaryType.double_one,
     },
 }
 
@@ -92,14 +99,14 @@ class BinaryV1UncompressedWriter:
             value = value.value
         value_type = type(value)
 
-        def pack_type_and_flags(type: BinaryTypes, flags: kv3.Flag):
+        def pack_type_and_flags(type: BinaryType, flags: kv3.Flag):
             if flags == kv3.Flag(0):
                 return pack("<B", type)
             return pack("<B", type | 0x80) + pack("<B", flags)
 
-        if value is None: return pack_type_and_flags(BinaryTypes.null, flags)
-        if value is True: return pack_type_and_flags(BinaryTypes.boolean_true, flags)
-        if value is False: return pack_type_and_flags(BinaryTypes.boolean_false, flags)
+        if value is None: return pack_type_and_flags(BinaryType.null, flags)
+        if value is True: return pack_type_and_flags(BinaryType.boolean_true, flags)
+        if value is False: return pack_type_and_flags(BinaryType.boolean_false, flags)
 
         if value_type in zeros_ones and value in zeros_ones[value_type]:
             return pack_type_and_flags(zeros_ones[value_type][value], flags)
@@ -108,7 +115,7 @@ class BinaryV1UncompressedWriter:
         if value_type in types:
             type_in_binary = types[value_type]
         elif isinstance(value, enum.IntEnum):
-            type_in_binary = BinaryTypes.int32 if self.serialize_enums_as_ints else BinaryTypes.string
+            type_in_binary = BinaryType.int32 if self.serialize_enums_as_ints else BinaryType.string
         else:
             raise TypeError(f"Unknown type {value_type}")
         return pack_type_and_flags(type_in_binary, flags) + self.value_serialize(value)
@@ -141,7 +148,7 @@ class BinaryV1UncompressedWriter:
                     blob += self.value_and_type_serialize(item)
             case array.array:
                 blob += pack("<i", len(value))
-                blob += pack("<B", BinaryTypes.int64)
+                blob += pack("<B", BinaryType.int64)
                 blob += pack("<B", kv3.Flag(0).value)
                 for item in value:
                     blob += self.value_serialize(item)
