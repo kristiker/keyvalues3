@@ -6,65 +6,20 @@ MIT License
 Copyright (c) 2020 REDxEYE
 """
 
+import binascii
+from struct import pack, unpack, unpack_from, calcsize
 import keyvalues3 as kv3
-from binarywriter import BinaryMagics
+from keyvalues3.binarywriter import BinaryMagics, BinaryType
 
 class KV3TextReader:
     pass
 
-
 ## enums.py
 
-from enum import IntEnum, IntFlag, auto
-
-
-class KV3Encodings(ExtendedEnum):
-    KV3_ENCODING_BINARY_BLOCK_COMPRESSED = b"\x46\x1A\x79\x95\xBC\x95\x6C\x4F\xA7\x0B\x05\xBC\xA1\xB7\xDF\xD2"
-    KV3_ENCODING_BINARY_UNCOMPRESSED = b"\x00\x05\x86\x1B\xD8\xF7\xC1\x40\xAD\x82\x75\xA4\x82\x67\xE7\x14"
-    KV3_ENCODING_BINARY_BLOCK_LZ4 = b"\x8A\x34\x47\x68\xA1\x63\x5C\x4F\xA1\x97\x53\x80\x6F\xD9\xB1\x19"
-
-
-class KV3CompressionMethod(IntEnum, ExtendedEnum):
-    UNCOMPRESSED = 0
-    LZ4 = 1
-    ZSTD = 2
-
-
-class KV3Formats(ExtendedEnum):
-    KV3_FORMAT_GENERIC = b"\x7C\x16\x12\x74\xE9\x06\x98\x46\xAF\xF2\xE6\x3E\xB5\x90\x37\xE7"
-
-
-class KV3Type(IntEnum):
-    NULL = 1
-    BOOLEAN = 2
-    INT64 = 3
-    UINT64 = 4
-    DOUBLE = 5
-    STRING = 6
-    BINARY_BLOB = 7
-    ARRAY = 8
-    OBJECT = 9
-    ARRAY_TYPED = 10
-    INT32 = 11
-    UINT32 = 12
-
-    BOOLEAN_TRUE = 13
-    BOOLEAN_FALSE = 14
-    INT64_ZERO = 15
-    INT64_ONE = 16
-    DOUBLE_ZERO = 17
-    DOUBLE_ONE = 18
-    FLOAT = 19
-    INT16 = 20
-    UINT16 = 21
-    INT8 = 22
-    UINT8 = 23
-    ARRAY_TYPED_BYTE_LENGTH = 24
-    ARRAY_TYPED_BYTE_LENGTH2 = 25
-
+from enum import IntEnum, auto
 
 class Specifier(IntEnum):
-    INVALID = 0
+    NONE = 0
     RESOURCE = 1
     RESOURCE_NAME = 2
     PANORAMA = 3
@@ -105,24 +60,344 @@ class Specifier(IntEnum):
     EHANDLE = auto()
 
 
-#__all__ = ['KV3Type', 'KV3Formats', 'KV3CompressionMethod',
-#           'Specifier']
-
-
 from dataclasses import dataclass
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Type, TypeVar, Union, Protocol
+import abc, io, contextlib
 
 import numpy as np
 
-from SourceIO.library.utils import Buffer, MemoryBuffer, WritableMemoryBuffer
-from SourceIO.library.utils.rustlib import LZ4ChainDecoder, lz4_decompress, zstd_decompress_stream, zstd_decompress
-from SourceIO.library.utils.perf_sampler import timed
-from .enums import *
-from .types import *
+T = TypeVar("T")
+
+class Readable(Protocol):
+    @classmethod
+    def from_buffer(cls: Type[T], buffer: 'Buffer') -> T:
+        ...
+ 
+class Buffer(abc.ABC, io.RawIOBase):
+    def __init__(self):
+        io.RawIOBase.__init__(self)
+        self._endian = '<'
+
+    @contextlib.contextmanager
+    def save_current_offset(self):
+        entry = self.tell()
+        yield
+        self.seek(entry)
+
+    @contextlib.contextmanager
+    def read_from_offset(self, offset: int):
+        entry = self.tell()
+        self.seek(offset)
+        yield
+        self.seek(entry)
+
+    def read_source1_string(self, entry):
+        offset = self.read_int32()
+        if offset:
+            with self.read_from_offset(entry + offset):
+                return self.read_nt_string()
+        else:
+            return ""
+
+    def read_source2_string(self):
+        with self.read_from_offset(self.tell() + self.read_int32()):
+            return self.read_nt_string()
+
+    @property
+    @abc.abstractmethod
+    def data(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def size(self):
+        raise NotImplementedError()
+
+    def remaining(self):
+        return self.size() - self.tell()
+
+    @property
+    def preview(self):
+        with self.save_current_offset():
+            return binascii.hexlify(self.read(64), sep=' ', bytes_per_sep=4).decode('ascii').upper()
+
+    def align(self, align_to):
+        value = self.tell()
+        padding = (align_to - value % align_to) % align_to
+        if padding + self.tell() > self.size():
+            return
+        self.seek(padding, io.SEEK_CUR)
+
+    def skip(self, size):
+        self.seek(size, io.SEEK_CUR)
+
+    def read_fmt(self, fmt):
+        return unpack(self._endian + fmt, self.read(calcsize(self._endian + fmt)))
+
+    def _read(self, fmt):
+        return unpack(self._endian + fmt, self.read(calcsize(self._endian + fmt)))[0]
+
+    def read_relative_offset32(self):
+        return self.tell() + self.read_uint32()
+
+    def read_uint64(self):
+        return unpack(self._endian + "Q", self.read(8))[0]
+
+    def read_int64(self):
+        return unpack(self._endian + "q", self.read(8))[0]
+
+    def read_uint32(self):
+        return unpack(self._endian + "I", self.read(4))[0]
+
+    def read_int32(self):
+        return unpack(self._endian + "i", self.read(4))[0]
+
+    def read_uint16(self):
+        return unpack(self._endian + "H", self.read(2))[0]
+
+    def read_int16(self):
+        return unpack(self._endian + "h", self.read(2))[0]
+
+    def read_uint8(self):
+        return unpack(self._endian + "B", self.read(1))[0]
+
+    def read_int8(self):
+        return unpack(self._endian + "b", self.read(1))[0]
+
+    def read_float(self):
+        return unpack(self._endian + "f", self.read(4))[0]
+
+    def read_double(self):
+        return unpack(self._endian + "d", self.read(8))[0]
+
+    def read_nt_string(self):
+        buffer = bytearray()
+
+        while True:
+            chunk = self.read(min(32, self.remaining()))
+            if chunk:
+                chunk_end = chunk.find(b'\x00')
+            else:
+                chunk_end = 0
+            if chunk_end >= 0:
+                buffer += chunk[:chunk_end]
+            else:
+                buffer += chunk
+            if chunk_end >= 0:
+                self.seek(-(len(chunk) - chunk_end - 1), io.SEEK_CUR)
+                return buffer.decode('latin', errors='replace')
+
+    def read_ascii_string(self, length: Optional[int] = None):
+        if length is not None:
+            buffer = self.read(length).strip(b'\x00').rstrip(b'\x00')
+            if b'\x00' in buffer:
+                buffer = buffer[:buffer.index(b'\x00')]
+            return buffer.decode('latin', errors='replace')
+
+        return self.read_nt_string()
+
+    def read_fourcc(self):
+        return self.read_ascii_string(4)
+
+    def write_fmt(self, fmt: str, *values):
+        self.write(pack(self._endian + fmt, *values))
+
+    def write_uint64(self, value):
+        self.write_fmt('Q', value)
+
+    def write_int64(self, value):
+        self.write_fmt('q', value)
+
+    def write_uint32(self, value):
+        self.write_fmt('I', value)
+
+    def write_int32(self, value):
+        self.write_fmt('i', value)
+
+    def write_uint16(self, value):
+        self.write_fmt('H', value)
+
+    def write_int16(self, value):
+        self.write_fmt('h', value)
+
+    def write_uint8(self, value):
+        self.write_fmt('B', value)
+
+    def write_int8(self, value):
+        self.write_fmt('b', value)
+
+    def write_float(self, value):
+        self.write_fmt('f', value)
+
+    def write_double(self, value):
+        self.write_fmt('d', value)
+
+    def write_ascii_string(self, string, zero_terminated=False, length=-1):
+        pos = self.tell()
+        for c in string:
+            self.write(c.encode('ascii'))
+        if zero_terminated:
+            self.write(b'\x00')
+        elif length != -1:
+            to_fill = length - (self.tell() - pos)
+            if to_fill > 0:
+                for _ in range(to_fill):
+                    self.write_uint8(0)
+
+    def write_fourcc(self, fourcc):
+        self.write_ascii_string(fourcc)
+
+    def peek_uint32(self):
+        with self.save_current_offset():
+            return self.read_uint32()
+
+    def peek_fmt(self, fmt):
+        with self.save_current_offset():
+            return self.read_fmt(fmt)
+
+    def peek(self, size: int):
+        with self.save_current_offset():
+            return self.read(size)
+
+    def set_big_endian(self):
+        self._endian = '>'
+
+    def set_little_endian(self):
+        self._endian = '<'
+
+    def __bool__(self):
+        return self.tell() < self.size()
+
+    def slice(self, offset: Optional[int] = None, size: int = -1) -> 'Buffer':
+        raise NotImplementedError
+
+    def read_structure_array(self, offset, count, data_class: Readable):
+        if count == 0:
+            return []
+        self.seek(offset)
+        object_list = []
+        for _ in range(count):
+            obj = data_class.from_buffer(self)
+            object_list.append(obj)
+        return object_list
+
+    def read_half(self):
+        return self.read_fmt("h")[0]
 
 
-class UnsupportedVersion(Exception):
-    pass
+class MemoryBuffer(Buffer):
+
+    def __init__(self, buffer: bytes | bytearray | memoryview):
+        super().__init__()
+        self._buffer: memoryview = memoryview(buffer)
+        self._offset = 0
+
+    @property
+    def data(self) -> memoryview:
+        return self._buffer
+
+    def size(self):
+        return len(self._buffer)
+
+    def _read(self, fmt: str):
+        data = unpack_from(self._endian + fmt, self._buffer, self._offset)
+        self._offset += calcsize(self._endian + fmt)
+        return data[0]
+
+    def read_fmt(self, fmt):
+        data = unpack_from(self._endian + fmt, self._buffer, self._offset)
+        self._offset += calcsize(self._endian + fmt)
+        return data
+
+    def write(self, _b: Union[bytes, bytearray]) -> Optional[int]:
+        if self._offset + len(_b) > self.size():
+            raise BufferError(f"Not enough space left({self.remaining()}) in buffer to write {len(_b)} bytes")
+        self._buffer[self._offset:self._offset + len(_b)] = _b
+        self._offset += len(_b)
+        return len(_b)
+
+    def read(self, _size: int = -1) -> Optional[bytes]:
+        if _size == -1:
+            data = self._buffer[self._offset:]
+            self._offset += len(data)
+            return data.tobytes()
+        data = self._buffer[self._offset:self._offset + _size]
+        self._offset += _size
+        return data.tobytes()
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        if whence == io.SEEK_SET:
+            self._offset = offset
+        elif whence == io.SEEK_CUR:
+            self._offset += offset
+        elif whence == io.SEEK_END:
+            self._offset = self.size() - offset
+        else:
+            raise ValueError("Invalid whence argument")
+
+        if self._offset > self.size():
+            raise BufferError('Offset is out of bounds')
+
+        return self._offset
+
+    def __str__(self) -> str:
+        return f'<MemoryBuffer {self.tell()}/{self.size()}>'
+
+    def tell(self) -> int:
+        return self._offset
+
+    @property
+    def closed(self) -> bool:
+        return self._buffer is None
+
+    def close(self) -> None:
+        self._buffer = None
+
+    def read_nt_string(self: 'MemoryBuffer'):
+        end = self._buffer.obj.index(b"\x00", self._offset)
+        string = self._buffer[self._offset:end]
+        self._offset+=end-self._offset+1
+        return string.tobytes().decode("utf8")
+
+    def slice(self, offset: Optional[int] = None, size: int = -1) -> 'MemorySlice':
+        if offset is None:
+            offset = self._offset
+        slice_offset = self.tell()
+        if size == -1:
+            return MemorySlice(self._buffer[offset:], slice_offset)
+        return MemorySlice(self._buffer[offset:offset + size], slice_offset)
+
+class WritableMemoryBuffer(io.BytesIO, Buffer):
+    def __init__(self, initial_bytes=None):
+        io.BytesIO.__init__(self, initial_bytes)
+        Buffer.__init__(self)
+
+    @property
+    def data(self):
+        return self.getbuffer()
+
+    def size(self):
+        return len(self.getbuffer())
+
+    def slice(self, offset: Optional[int] = None, size: int = -1) -> 'MemorySlice':
+        if offset is None:
+            offset = self.tell()
+
+        if size == -1:
+            return MemoryBuffer(self.data[offset:])
+        return MemoryBuffer(self.data[offset:offset + size])
+    
+class MemorySlice(MemoryBuffer):
+    def __init__(self, buffer: Union[bytes, bytearray, memoryview], offset: int):
+        super().__init__(buffer)
+        self._slice_offset = offset
+
+    def abs_tell(self):
+        return self.tell() + self._slice_offset
+
+
+
+import lz4.block
+#from SourceIO.library.utils.rustlib import LZ4ChainDecoder, lz4_decompress, zstd_decompress_stream, zstd_decompress
 
 
 @dataclass(slots=True)
@@ -136,7 +411,7 @@ class KV3Context:
     blocks_buffer: Optional[Buffer]
     object_member_counts: Buffer
 
-    read_type: Callable[['KV3Context'], tuple[KV3Type, Specifier, Specifier]]
+    read_type: Callable[['KV3Context'], tuple[BinaryType, Specifier, Specifier]]
 
 
 def _legacy_block_decompress(in_buffer: Buffer) -> Buffer:
@@ -172,24 +447,23 @@ def _legacy_block_decompress(in_buffer: Buffer) -> Buffer:
 
 
 def read_valve_keyvalue3(buffer: Buffer) -> kv3.ValueType:
-    sig = buffer.read(4)
-    if not BinaryMagics.is_defined(sig):
+    magic = buffer.read(4)
+    if not BinaryMagics.is_defined(magic):
         raise BufferError("Not a KV3 buffer")
-    sig = BinaryMagics(sig)
-    encoding = buffer.read(16)
-    if sig == BinaryMagics.VKV3:
-        return read_legacy(encoding, buffer)
+    magic = BinaryMagics(magic)
+    if magic == BinaryMagics.VKV3:
+        return read_legacy(buffer)
     """elif sig == BinaryMagics.KV3_01:
-        return read_v1(encoding, buffer)
+        return read_v1(buffer)
     elif sig == BinaryMagics.KV3_02:
-        return read_v2(encoding, buffer)
+        return read_v2(buffer)
     elif sig == BinaryMagics.KV3_03:
-        return read_v3(encoding, buffer)
+        return read_v3(buffer)
     elif sig == BinaryMagics.KV3_04:
-        return read_v4(encoding, buffer)
+        return read_v4(buffer)
     elif sig == BinaryMagics.KV3_05:
-        return read_v5(encoding, buffer)"""
-    raise UnsupportedVersion(f"Unsupported KV3 version: {sig!r}")
+        return read_v5(buffer)"""
+    raise Exception(f"Unsupported KV3 version: {magic!r}")
 
 @dataclass
 class KV3Buffers:
@@ -210,202 +484,172 @@ class KV3ContextNew:
     binary_blob_sizes: list[int] | None
     binary_blob_buffer: Buffer | None
 
-    read_type: Callable[['KV3ContextNew'], tuple[KV3Type, Specifier]]
-    read_value: Callable[['KV3ContextNew'], AnyKVType]
-    active_buffer: KV3Buffers | None = None
+    read_type: Callable[['KV3ContextNew'], tuple[BinaryType, Specifier]]
+    read_value: Callable[['KV3ContextNew'], kv3.ValueType]
+    active_buffer: KV3Buffers
 
 
-def _read_boolean(context: KV3ContextNew, specifier: Specifier):
-    value = Bool(context.active_buffer.byte_buffer.read_uint8() == 1)
-    value.specifier = specifier
+def _read_int64(context: KV3ContextNew):
+    value = context.active_buffer.double_buffer.read_int64()
     return value
 
 
-def _read_int64(context: KV3ContextNew, specifier: Specifier):
-    value = Int64(context.active_buffer.double_buffer.read_int64())
-    value.specifier = specifier
+def _read_uint64(context: KV3ContextNew):
+    value = context.active_buffer.double_buffer.read_uint64()
     return value
 
 
-def _read_uint64(context: KV3ContextNew, specifier: Specifier):
-    value = UInt64(context.active_buffer.double_buffer.read_uint64())
-    value.specifier = specifier
+def _read_double(context: KV3ContextNew):
+    value = context.active_buffer.double_buffer.read_double()
     return value
 
 
-def _read_double(context: KV3ContextNew, specifier: Specifier):
-    value = Double(context.active_buffer.double_buffer.read_double())
-    value.specifier = specifier
-    return value
-
-
-def _read_string(context: KV3ContextNew, specifier: Specifier):
+def _read_string(context: KV3ContextNew):
     str_id = context.active_buffer.int_buffer.read_int32()
     if str_id == -1:
-        value = String('')
+        value = ''
     else:
-        value = String(context.strings[str_id])
-    value.specifier = specifier
+        value = context.strings[str_id]
     return value
 
 
-def _read_blob(context: KV3ContextNew, specifier: Specifier):
+def _read_blob(context: KV3ContextNew):
     if context.binary_blob_sizes is not None:
         expected_size = context.binary_blob_sizes.pop(0)
         if expected_size == 0:
-            value = BinaryBlob(b"")
+            value = b""
         else:
             data = context.binary_blob_buffer.read(expected_size)
             assert len(data) == expected_size, "Binary blob is smaller than expected"
-            value = BinaryBlob(data)
+            value = data
     else:
-        value = BinaryBlob(context.active_buffer.byte_buffer.read(context.active_buffer.int_buffer.read_int32()))
-    value.specifier = specifier
+        value = context.active_buffer.byte_buffer.read(context.active_buffer.int_buffer.read_int32())
     return value
 
 
-def _read_array(context: KV3ContextNew, specifier: Specifier):
+def _read_array(context: KV3ContextNew):
     count = context.active_buffer.int_buffer.read_int32()
-    array = Array([None] * count)
+    array = [None] * count
     for i in range(count):
         array[i] = context.read_value(context)
     return array
 
 
-def _read_object(context: KV3ContextNew, specifier: Specifier):
+def _read_object(context: KV3ContextNew):
     member_count = context.object_member_count_buffer.read_uint32()
-    obj = Object()
+    obj = {}
     for i in range(member_count):
         name_id = context.active_buffer.int_buffer.read_int32()
         name = context.strings[name_id] if name_id != -1 else str(i)
         obj[name] = context.read_value(context)
-    obj.specifier = specifier
     return obj
 
 
-def _read_array_typed_helper(context: KV3ContextNew, count, specifier: Specifier):
+def _read_array_typed_helper(context: KV3ContextNew, count):
     buffers = context.active_buffer
     data_type, data_specifier = context.read_type(context)
-    if data_type == KV3Type.DOUBLE_ZERO:
+
+    return b"";
+
+    if data_type == BinaryType.double_zero:
         return np.zeros(count, np.float64)
-    elif data_type == KV3Type.DOUBLE_ONE:
+    elif data_type == BinaryType.double_one:
         return np.ones(count, np.float64)
-    elif data_type == KV3Type.INT64_ZERO:
+    elif data_type == BinaryType.int64_zero:
         return np.zeros(count, np.int64)
-    elif data_type == KV3Type.INT64_ONE:
+    elif data_type == BinaryType.int64_one:
         return np.ones(count, np.int64)
-    elif data_type == KV3Type.DOUBLE:
+    elif data_type == BinaryType.double:
         return np.frombuffer(buffers.double_buffer.read(8 * count), np.float64)
-    elif data_type == KV3Type.INT64:
+    elif data_type == BinaryType.int64:
         return np.frombuffer(buffers.double_buffer.read(8 * count), np.int64)
-    elif data_type == KV3Type.UINT64:
+    elif data_type == BinaryType.uint64:
         return np.frombuffer(buffers.double_buffer.read(8 * count), np.uint64)
-    elif data_type == KV3Type.INT32:
+    elif data_type == BinaryType.int32:
         return np.frombuffer(buffers.int_buffer.read(4 * count), np.int32)
-    elif data_type == KV3Type.UINT32:
+    elif data_type == BinaryType.uint32:
         return np.frombuffer(buffers.int_buffer.read(4 * count), np.uint32)
     else:
         reader = _kv3_readers[data_type]
         return TypedArray(data_type, data_specifier, [reader(context, data_specifier) for _ in range(count)])
 
-
-def _read_array_typed(context: KV3ContextNew, specifier: Specifier):
+def _read_array_typed(context: KV3ContextNew):
     count = context.active_buffer.int_buffer.read_uint32()
-    array = _read_array_typed_helper(context, count, specifier)
-    if isinstance(array, BaseType):
-        array.specifier = specifier
+    array = _read_array_typed_helper(context, count)
     return array
 
 
-def _read_array_typed_byte_size(context: KV3ContextNew, specifier: Specifier):
+def _read_array_typed_byte_size(context: KV3ContextNew):
     count = context.active_buffer.byte_buffer.read_uint8()
-    array = _read_array_typed_helper(context, count, specifier)
-    if isinstance(array, BaseType):
-        array.specifier = specifier
+    array = _read_array_typed_helper(context, count)
     return array
 
 
-def _read_array_typed_byte_size2(context: KV3ContextNew, specifier: Specifier):
+def _read_array_typed_byte_size2(context: KV3ContextNew):
     count = context.active_buffer.byte_buffer.read_uint8()
-    assert specifier == Specifier.UNSPECIFIED, f"Unsupported specifier {specifier!r}"
+    #assert specifier == Specifier.UNSPECIFIED, f"Unsupported specifier {specifier!r}"
     context.active_buffer = context.buffer0
-    array = _read_array_typed_helper(context, count, specifier)
+    array = _read_array_typed_helper(context, count)
     context.active_buffer = context.buffer1
-    if isinstance(array, BaseType):
-        array.specifier = specifier
     return array
 
 
-def _read_int32(context: KV3ContextNew, specifier: Specifier):
-    value = Int32(context.active_buffer.int_buffer.read_int32())
-    value.specifier = specifier
+def _read_int32(context: KV3ContextNew): return context.active_buffer.int_buffer.read_int32()
+def _read_uint32(context: KV3ContextNew): return context.active_buffer.int_buffer.read_uint32()
+
+
+def _read_float(context: KV3ContextNew):
+    value = context.active_buffer.int_buffer.read_float()
     return value
 
 
-def _read_uint32(context: KV3ContextNew, specifier: Specifier):
-    value = UInt32(context.active_buffer.int_buffer.read_uint32())
-    value.specifier = specifier
+def _read_int16(context: KV3ContextNew):
+    value = context.active_buffer.short_buffer.read_int16()
     return value
 
 
-def _read_float(context: KV3ContextNew, specifier: Specifier):
-    value = Float(context.active_buffer.int_buffer.read_float())
-    value.specifier = specifier
+def _read_uint16(context: KV3ContextNew):
+    value = context.active_buffer.short_buffer.read_uint16()
     return value
 
 
-def _read_int16(context: KV3ContextNew, specifier: Specifier):
-    value = Int32(context.active_buffer.short_buffer.read_int16())
-    value.specifier = specifier
+def _read_int8(context: KV3ContextNew):
+    value = context.active_buffer.byte_buffer.read_uint8()
     return value
 
 
-def _read_uint16(context: KV3ContextNew, specifier: Specifier):
-    value = UInt32(context.active_buffer.short_buffer.read_uint16())
-    value.specifier = specifier
+def _read_uint8(context: KV3ContextNew):
+    value = context.active_buffer.byte_buffer.read_uint8()
     return value
 
 
-def _read_int8(context: KV3ContextNew, specifier: Specifier):
-    value = Int32(context.active_buffer.byte_buffer.read_uint8())
-    value.specifier = specifier
-    return value
-
-
-def _read_uint8(context: KV3ContextNew, specifier: Specifier):
-    value = UInt32(context.active_buffer.byte_buffer.read_uint8())
-    value.specifier = specifier
-    return value
-
-
-_kv3_readers: list[Callable[['KV3ContextNew', Specifier], Any] | None] = [
-    None,
-    lambda a, c: None,
-    _read_boolean,
-    _read_int64,
-    _read_uint64,
-    _read_double,
-    _read_string,
-    _read_blob,
-    _read_array,
-    _read_object,
-    _read_array_typed,
-    _read_int32,
-    _read_uint32,
-    lambda a, c: Bool(True),
-    lambda a, c: Bool(False),
-    lambda a, c: Int64(0),
-    lambda a, c: Int64(1),
-    lambda a, c: Double(0.0),
-    lambda a, c: Double(1.0),
-    _read_float,
-    _read_int16,
-    _read_uint16,
-    _read_int8,
-    _read_uint8,
-    _read_array_typed_byte_size,
-    _read_array_typed_byte_size2,
-]
+_kv3_readers: dict[BinaryType, Callable[[KV3ContextNew], kv3.ValueType] | None] = {
+    BinaryType.null : lambda _: None,
+    BinaryType.boolean : lambda c: _read_uint8(c) == 1,
+    BinaryType.int64 : _read_int64,
+    BinaryType.uint64 : _read_uint64,
+    BinaryType.double : _read_double,
+    BinaryType.string : _read_string,
+    BinaryType.binary_blob : _read_blob,
+    BinaryType.array : _read_array,
+    BinaryType.dictionary : _read_object,
+    BinaryType.array_typed : _read_array_typed,
+    BinaryType.int32 : _read_int32,
+    BinaryType.uint32 : _read_uint32,
+    BinaryType.boolean_true : lambda _: True,
+    BinaryType.boolean_false : lambda _: False,
+    BinaryType.int64_zero : lambda _: 0,
+    BinaryType.int64_one : lambda _: 1,
+    BinaryType.double_zero : lambda _: 0.0,
+    BinaryType.double_one : lambda _: 1.0,
+    BinaryType.float : _read_float,
+    BinaryType.int16 : _read_int16,
+    BinaryType.uint16 : _read_uint16,
+    BinaryType.int8 : _read_int8,
+    BinaryType.uint8 : _read_uint8,
+    BinaryType.array_typed_byte_length : _read_array_typed_byte_size,
+    BinaryType.array_typed_byte_length2 : _read_array_typed_byte_size2,
+}
 
 
 def _read_value_legacy(context: KV3ContextNew):
@@ -413,9 +657,13 @@ def _read_value_legacy(context: KV3ContextNew):
     reader = _kv3_readers[value_type]
     if reader is None:
         raise NotImplementedError(f"Reader for {value_type!r} not implemented")
+    
+    value = reader(context)
 
-    return reader(context, specifier)
+    if specifier > Specifier.NONE and specifier < Specifier.ENTITY_NAME:
+        value = kv3.flagged_value(value, flags=kv3.Flag(specifier.value))
 
+    return value
 
 def _read_type_legacy(context: KV3ContextNew):
     data_type = context.types_buffer.read_uint8()
@@ -434,7 +682,7 @@ def _read_type_legacy(context: KV3ContextNew):
             specifier = Specifier.SOUNDEVENT
         elif flag & 32:
             specifier = Specifier.SUBCLASS
-    return KV3Type(data_type), specifier
+    return BinaryType(data_type), specifier
 
 
 def _read_type_v3(context: KV3ContextNew):
@@ -454,7 +702,7 @@ def _read_type_v3(context: KV3ContextNew):
             specifier = Specifier.SOUNDEVENT
         elif flag & 32:
             specifier = Specifier.SUBCLASS
-    return KV3Type(data_type), specifier
+    return BinaryType(data_type), specifier
 
 
 def split_buffer(data_buffer: Buffer, bytes_count: int, short_count: int, int_count: int, double_count: int,
@@ -473,21 +721,23 @@ def split_buffer(data_buffer: Buffer, bytes_count: int, short_count: int, int_co
     return KV3Buffers(bytes_buffer, shorts_buffer, ints_buffer, doubles_buffer)
 
 
-def read_legacy(encoding: bytes, buffer: Buffer):
-    encoding = KV3Encodings(encoding)
-    fmt = buffer.read(16)
+def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
+    encoding_bytes_le = compressed_buffer.read(16)
+    buffer: Buffer 
 
-    if encoding == KV3Encodings.KV3_ENCODING_BINARY_UNCOMPRESSED:
-        buffer = MemoryBuffer(buffer.read())
-    elif encoding == KV3Encodings.KV3_ENCODING_BINARY_BLOCK_COMPRESSED:
-        buffer = _legacy_block_decompress(buffer)
-    elif encoding == KV3Encodings.KV3_ENCODING_BINARY_BLOCK_LZ4:
-        decompressed_size = buffer.read_uint32()
-        buffer = MemoryBuffer(lz4_decompress(buffer.read(-1), decompressed_size))
+    if encoding_bytes_le == kv3.ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
+        buffer = MemoryBuffer(compressed_buffer.read())
+    elif encoding_bytes_le == kv3.ENCODING_BINARY_BLOCK_COMPRESSED.version.bytes_le:
+        buffer = _legacy_block_decompress(compressed_buffer)
+    elif encoding_bytes_le == kv3.ENCODING_BINARY_BLOCK_LZ4.version.bytes_le:
+        decompressed_size = compressed_buffer.read_uint32()
+        buffer = MemoryBuffer(lz4.block.decompress(compressed_buffer.read(), decompressed_size))
     else:
         raise ValueError("Unsupported Legacy encoding")
-
-    strings = [buffer.read_ascii_string() for _ in range(buffer.read_uint32())]
+    
+    buffer.skip(16)
+    string_count = buffer.read_uint32()
+    strings = [buffer.read_ascii_string() for _ in range(string_count)]
 
     buffers = KV3Buffers(buffer, None, buffer, buffer)
     context = KV3ContextNew(
@@ -507,7 +757,7 @@ def read_legacy(encoding: bytes, buffer: Buffer):
     return root
 
 """
-def read_v1(encoding: bytes, buffer: Buffer):
+def read_v1(buffer: Buffer):
     compression_method = buffer.read_uint32()
 
     bytes_count = buffer.read_uint32()
@@ -548,7 +798,7 @@ def read_v1(encoding: bytes, buffer: Buffer):
     return root
 
 
-def read_v2(encoding: bytes, buffer: Buffer):
+def read_v2(buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
@@ -654,7 +904,7 @@ def read_v2(encoding: bytes, buffer: Buffer):
                 specifier = Specifier.SOUNDEVENT
             elif flag & 32:
                 specifier = Specifier.SUBCLASS
-        return KV3Type(data_type), specifier
+        return BinaryType(data_type), specifier
 
     buffers = KV3Buffers(bytes_buffer, None, ints_buffer, doubles_buffer)
     context = KV3ContextNew(
@@ -673,7 +923,7 @@ def read_v2(encoding: bytes, buffer: Buffer):
     return root
 
 
-def read_v3(encoding: bytes, buffer: Buffer):
+def read_v3(buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
@@ -762,7 +1012,7 @@ def read_v3(encoding: bytes, buffer: Buffer):
     return root
 
 
-def read_v4(encoding: bytes, buffer: Buffer):
+def read_v4(buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
@@ -856,7 +1106,7 @@ def read_v4(encoding: bytes, buffer: Buffer):
     return root
 
 
-def read_v5(encoding: bytes, buffer: Buffer):
+def read_v5(buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
@@ -961,8 +1211,8 @@ def read_v5(encoding: bytes, buffer: Buffer):
             specific_type = Specifier(context.types_buffer.read_uint8())
         if t & 0x40 != 0:
             raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
-            # f = KV3TypeFlag(context.types_buffer.read_uint8())
-        return KV3Type(t & mask), specific_type
+            # f = BinaryTypeFlag(context.types_buffer.read_uint8())
+        return BinaryType(t & mask), specific_type
 
     context = KV3ContextNew(
         strings=strings,
@@ -978,7 +1228,7 @@ def read_v5(encoding: bytes, buffer: Buffer):
     )
     root = context.read_value(context)
     return root
-"""
+
 
 def zstd_decompress_stream_wrp(data):
     return zstd_decompress_stream(data)
@@ -1002,3 +1252,5 @@ def decompress_lz4_chain(buffer: Buffer, decompressed_block_sizes: list[int], co
             block_size_tmp -= actual_size
             block_data += decompressed[:actual_size]
     return block_data
+
+"""
