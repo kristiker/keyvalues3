@@ -7,7 +7,7 @@ Copyright (c) 2020 REDxEYE
 """
 
 import keyvalues3 as kv3
-#from binarywriter import BinaryMagics
+from binarywriter import BinaryMagics
 
 class KV3TextReader:
     pass
@@ -16,17 +16,6 @@ class KV3TextReader:
 ## enums.py
 
 from enum import IntEnum, IntFlag, auto
-
-from SourceIO.library.utils import ExtendedEnum
-
-
-class BinaryMagics(ExtendedEnum):
-    VKV_LEGACY = b'VKV\x03'
-    KV3_V1 = b'\x013VK'
-    KV3_V2 = b'\x023VK'
-    KV3_V3 = b'\x033VK'
-    KV3_V4 = b'\x043VK'
-    KV3_V5 = b'\x053VK'
 
 
 class KV3Encodings(ExtendedEnum):
@@ -116,193 +105,8 @@ class Specifier(IntEnum):
     EHANDLE = auto()
 
 
-#__all__ = ['KV3Type', 'BinaryMagics', 'KV3Formats', 'KV3Encodings', 'KV3CompressionMethod',
+#__all__ = ['KV3Type', 'KV3Formats', 'KV3CompressionMethod',
 #           'Specifier']
-
-## types.py
-
-import abc
-from functools import partial
-from types import NoneType
-from typing import Collection, Optional, TypeVar
-
-import numpy as np
-
-from .enums import KV3Type, Specifier
-
-
-class BaseType(abc.ABC):
-    def __init_subclass__(cls, **kwargs):
-        cls.specifier: Specifier = Specifier.UNSPECIFIED
-
-    def to_dict(self):
-        return NotImplemented
-
-
-class NullObject(BaseType):
-    def __bool__(self):
-        return False
-
-    def to_dict(self):
-        return None
-
-
-class String(BaseType, str):
-    def to_dict(self):
-        return str(self)
-
-
-class _BaseInt(BaseType, int):
-    def to_dict(self):
-        return int(self)
-
-
-class _BaseFloat(BaseType, float):
-    def to_dict(self):
-        return float(self)
-
-
-class Bool(_BaseInt):
-    pass
-
-
-class Int32(_BaseInt):
-    pass
-
-
-class UInt32(_BaseInt):
-    pass
-
-
-class Int64(_BaseInt):
-    pass
-
-
-class UInt64(_BaseInt):
-    pass
-
-
-class Double(_BaseFloat):
-    pass
-
-
-class Float(_BaseFloat):
-    pass
-
-
-class BinaryBlob(BaseType, bytes):
-
-    def to_dict(self):
-        return bytes(self)
-
-
-T = TypeVar('T', BaseType, str, NoneType)
-
-DEBUGGING = False
-
-
-class Object(BaseType, dict):
-    def __setitem__(self, key, value: T):
-        if DEBUGGING:
-            if isinstance(value, np.ndarray):
-                assert value.dtype in (np.float32, np.float64,
-                                       np.int8, np.uint8,
-                                       np.int16, np.uint16,
-                                       np.int32, np.uint32,
-                                       np.int64, np.uint64)
-            elif not isinstance(value, (BaseType, str, NoneType)):
-                raise TypeError(f'Only KV3 types are allowed, got {type(value)}')
-        super(Object, self).__setitem__(key, value)
-
-    def __contains__(self, item):
-        if isinstance(item, tuple):
-            for key in item:
-                if dict.__contains__(self, key):
-                    return True
-            return False
-        else:
-            return dict.__contains__(self, item)
-
-    def __getitem__(self, item):
-        if isinstance(item, tuple):
-            for key in item:
-                if dict.__contains__(self, key):
-                    return dict.__getitem__(self, key)
-            raise KeyError(item)
-        else:
-            return dict.__getitem__(self, item)
-
-    def to_dict(self):
-        if any(isinstance(i, np.ndarray) for i in self.values()):
-            res = {}
-            for k, v in self.items():
-                if v is not None:
-                    if isinstance(v, np.ndarray):
-                        v = v.tolist()
-                    else:
-                        v = v.to_dict()
-                res[k] = v
-            return res
-        return {k: v.to_dict() for (k, v) in self.items()}
-
-
-class Array(BaseType, list[T]):
-    def __init__(self, initial: Optional[list[T]] = None):
-        super(Array, self).__init__(initial)
-
-    def append(self, value: T):
-        assert isinstance(value, BaseType)
-        super(Array, self).append(value)
-
-    def extend(self, values: Collection[T]):
-        assert all(map(partial(isinstance, __class_or_tuple=BaseType), values))
-        super(Array, self).extend(values)
-
-    def to_dict(self):
-        if any(isinstance(i, np.ndarray) for i in self):
-            res = []
-            for i in self:
-                if isinstance(i, np.ndarray):
-                    i = i.tolist()
-                else:
-                    i = i.to_dict()
-                res.append(i)
-            return res
-        return [(i.to_dict() if i is not None else None) for i in self]
-
-
-class TypedArray(BaseType, list[T]):
-    def __init__(self, data_type: KV3Type, data_specifier: Specifier, initial: Optional[list[T]] = None):
-        super(TypedArray, self).__init__(initial)
-        self.data_type = data_type
-        self.data_specifier = data_specifier
-
-    def append(self, value: T):
-        assert isinstance(value, BaseType)
-        super(TypedArray, self).append(value)
-
-    def extend(self, values: Collection[T]):
-        assert all(map(partial(isinstance, __class_or_tuple=BaseType), values))
-        super(TypedArray, self).extend(values)
-
-    def to_dict(self):
-        if any(isinstance(i, np.ndarray) for i in self):
-            res = []
-            for i in self:
-                if isinstance(i, np.ndarray):
-                    i = i.tolist()
-                else:
-                    i = i.to_dict()
-                res.append(i)
-            return res
-        return [i.to_dict() for i in self]
-
-
-AnyKVType = Object | NullObject | String | Bool | Int64 | Int32 | UInt64 | UInt32 | Double | Float | BinaryBlob | Array | TypedArray
-
-#__all__ = ['BaseType', 'Object', 'NullObject', 'String', 'Bool',
-#           'Int64', 'UInt32', 'UInt64', 'Int32', 'Double', 'Float',
-#           'BinaryBlob', 'Array', 'TypedArray', 'AnyKVType']
 
 
 from dataclasses import dataclass
@@ -367,25 +171,24 @@ def _legacy_block_decompress(in_buffer: Buffer) -> Buffer:
     return out_buffer
 
 
-@timed
-def read_valve_keyvalue3(buffer: Buffer) -> AnyKVType:
+def read_valve_keyvalue3(buffer: Buffer) -> kv3.ValueType:
     sig = buffer.read(4)
-    if not BinaryMagics.is_valid(sig):
+    if not BinaryMagics.is_defined(sig):
         raise BufferError("Not a KV3 buffer")
     sig = BinaryMagics(sig)
     encoding = buffer.read(16)
-    if sig == BinaryMagics.VKV:
+    if sig == BinaryMagics.VKV3:
         return read_legacy(encoding, buffer)
-    elif sig == BinaryMagics.KV3_V1:
+    """elif sig == BinaryMagics.KV3_01:
         return read_v1(encoding, buffer)
-    elif sig == BinaryMagics.KV3_V2:
+    elif sig == BinaryMagics.KV3_02:
         return read_v2(encoding, buffer)
-    elif sig == BinaryMagics.KV3_V3:
+    elif sig == BinaryMagics.KV3_03:
         return read_v3(encoding, buffer)
-    elif sig == BinaryMagics.KV3_V4:
+    elif sig == BinaryMagics.KV3_04:
         return read_v4(encoding, buffer)
-    elif sig == BinaryMagics.KV3_V5:
-        return read_v5(encoding, buffer)
+    elif sig == BinaryMagics.KV3_05:
+        return read_v5(encoding, buffer)"""
     raise UnsupportedVersion(f"Unsupported KV3 version: {sig!r}")
 
 @dataclass
@@ -605,7 +408,6 @@ _kv3_readers: list[Callable[['KV3ContextNew', Specifier], Any] | None] = [
 ]
 
 
-@timed
 def _read_value_legacy(context: KV3ContextNew):
     value_type, specifier = context.read_type(context)
     reader = _kv3_readers[value_type]
@@ -671,10 +473,7 @@ def split_buffer(data_buffer: Buffer, bytes_count: int, short_count: int, int_co
     return KV3Buffers(bytes_buffer, shorts_buffer, ints_buffer, doubles_buffer)
 
 
-@timed
 def read_legacy(encoding: bytes, buffer: Buffer):
-    if not KV3Encodings.is_valid(encoding):
-        raise BufferError(f'Buffer contains unknown encoding: {encoding!r}')
     encoding = KV3Encodings(encoding)
     fmt = buffer.read(16)
 
@@ -707,8 +506,7 @@ def read_legacy(encoding: bytes, buffer: Buffer):
     root = context.read_value(context)
     return root
 
-
-@timed
+"""
 def read_v1(encoding: bytes, buffer: Buffer):
     compression_method = buffer.read_uint32()
 
@@ -750,7 +548,6 @@ def read_v1(encoding: bytes, buffer: Buffer):
     return root
 
 
-@timed
 def read_v2(encoding: bytes, buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
@@ -876,7 +673,6 @@ def read_v2(encoding: bytes, buffer: Buffer):
     return root
 
 
-@timed
 def read_v3(encoding: bytes, buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
@@ -966,7 +762,6 @@ def read_v3(encoding: bytes, buffer: Buffer):
     return root
 
 
-@timed
 def read_v4(encoding: bytes, buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
@@ -1061,7 +856,6 @@ def read_v4(encoding: bytes, buffer: Buffer):
     return root
 
 
-@timed
 def read_v5(encoding: bytes, buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
@@ -1157,8 +951,7 @@ def read_v5(encoding: bytes, buffer: Buffer):
             assert buffer.read_uint32() == 0xFFEEDD00
         blocks_buffer = MemoryBuffer(block_data)
 
-    @timed
-    def _read_type(context: KV3ContextNew):
+        def _read_type(context: KV3ContextNew):
         t = context.types_buffer.read_int8()
         mask = 63
         if t >= 0:
@@ -1185,19 +978,16 @@ def read_v5(encoding: bytes, buffer: Buffer):
     )
     root = context.read_value(context)
     return root
+"""
 
-
-@timed
 def zstd_decompress_stream_wrp(data):
     return zstd_decompress_stream(data)
 
 
-@timed
 def lz4_decompress_wrp(data, decomp_size):
     return lz4_decompress(data, decomp_size)
 
 
-@timed
 def decompress_lz4_chain(buffer: Buffer, decompressed_block_sizes: list[int], compressed_block_sizes: list[int],
                          compression_frame_size: int):
     block_data = b""
