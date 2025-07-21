@@ -9,6 +9,8 @@ class BinaryMagics(bytes, enum.Enum):
     KV3_01 = b"\x013VK"
     KV3_02 = b"\x023VK"
     KV3_03 = b"\x033VK"
+    KV3_04 = b"\x043VK"
+    KV3_05 = b"\x053VK"
     @classmethod
     def is_defined(cls, magic: bytes):
         return magic in cls._value2member_map_
