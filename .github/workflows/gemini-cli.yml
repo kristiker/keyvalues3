@@ -10,6 +10,12 @@ on:
   issue_comment:
     types:
       - 'created'
+  discussion:
+    types:
+        - 'created'
+  discussion_comment:
+    types:
+      - 'created'
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.event.issue.number }}'
@@ -317,3 +323,4 @@ jobs:
             - **Always commit and push your changes if you modify code or documentation.**
             - **If you are unsure about the fix or answer, explain your reasoning and ask clarifying questions.**
             - **Follow project conventions and best practices.**
+
