@@ -4,14 +4,17 @@ import typing
 from struct import pack
 import keyvalues3 as kv3
 
+
 class BinaryMagics(bytes, enum.Enum):
     VKV3 = b"VKV\x03"
     KV3_01 = b"\x013VK"
     KV3_02 = b"\x023VK"
     KV3_03 = b"\x033VK"
+
     @classmethod
     def is_defined(cls, magic: bytes):
         return magic in cls._value2member_map_
+
 
 class BinaryTypes(enum.IntEnum):
     null = 1
@@ -33,6 +36,7 @@ class BinaryTypes(enum.IntEnum):
     double_zero = 17
     double_one = 18
 
+
 types = {
     int: BinaryTypes.int64,
     float: BinaryTypes.double,
@@ -53,8 +57,10 @@ zeros_ones = {
     },
 }
 
+
 class BinaryV1UncompressedWriter:
     encoding = kv3.ENCODING_BINARY_UNCOMPRESSED
+
     def __init__(self, kv3file: kv3.KV3File, serialize_enums_as_ints: bool = False):
         self.kv3file = kv3file
         self.serialize_enums_as_ints = serialize_enums_as_ints
@@ -66,12 +72,16 @@ class BinaryV1UncompressedWriter:
         return bytes(self.encode_header() + self.encode_body())
 
     def encode_header(self):
-        return BinaryMagics.VKV3.value + self.encoding.version.bytes_le + self.kv3file.format.version.bytes_le
+        return (
+            BinaryMagics.VKV3.value
+            + self.encoding.version.bytes_le
+            + self.kv3file.format.version.bytes_le
+        )
 
     def encode_body(self) -> bytes:
         value_serialized = self.value_and_type_serialize(self.kv3file.value)
         string_table = self.encode_strings()
-        return string_table + value_serialized + b"\xFF\xFF\xFF\xFF"
+        return string_table + value_serialized + b"\xff\xff\xff\xff"
 
     def encode_strings(self):
         string_table = pack("<I", len(self.strings))
@@ -95,9 +105,12 @@ class BinaryV1UncompressedWriter:
                 return pack("<B", type)
             return pack("<B", type | 0x80) + pack("<B", flags)
 
-        if value is None: return pack_type_and_flags(BinaryTypes.null, flags)
-        if value is True: return pack_type_and_flags(BinaryTypes.boolean_true, flags)
-        if value is False: return pack_type_and_flags(BinaryTypes.boolean_false, flags)
+        if value is None:
+            return pack_type_and_flags(BinaryTypes.null, flags)
+        if value is True:
+            return pack_type_and_flags(BinaryTypes.boolean_true, flags)
+        if value is False:
+            return pack_type_and_flags(BinaryTypes.boolean_false, flags)
 
         if value_type in zeros_ones and value in zeros_ones[value_type]:
             return pack_type_and_flags(zeros_ones[value_type][value], flags)
@@ -106,7 +119,11 @@ class BinaryV1UncompressedWriter:
         if value_type in types:
             type_in_binary = types[value_type]
         elif isinstance(value, enum.IntEnum):
-            type_in_binary = BinaryTypes.int32 if self.serialize_enums_as_ints else BinaryTypes.string
+            type_in_binary = (
+                BinaryTypes.int32
+                if self.serialize_enums_as_ints
+                else BinaryTypes.string
+            )
         else:
             raise TypeError(f"Unknown type {value_type}")
         return pack_type_and_flags(type_in_binary, flags) + self.value_serialize(value)
@@ -125,8 +142,10 @@ class BinaryV1UncompressedWriter:
                     else:
                         blob += pack("<i", len(self.strings))
                         self.strings.append(value)
-            case int(): blob += pack("<q", value)
-            case float(): blob += pack("<d", value)
+            case int():
+                blob += pack("<q", value)
+            case float():
+                blob += pack("<d", value)
             case str():
                 if value == "":
                     blob += pack("<i", -1)
@@ -153,8 +172,11 @@ class BinaryV1UncompressedWriter:
 
 
 import lz4.block
+
+
 class BinaryLZ4(BinaryV1UncompressedWriter):
     encoding = kv3.ENCODING_BINARY_BLOCK_LZ4
+
     def __bytes__(self):
         self.strings.clear()
         blob = self.encode_header()
