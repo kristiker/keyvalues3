@@ -1,12 +1,13 @@
-
 import array
 import enum
 import keyvalues3 as kv3
+
 
 class KV3EncoderOptions:
     def __init__(self, serialize_enums_as_ints: bool = False, no_header: bool = False):
         self.serialize_enums_as_ints = serialize_enums_as_ints
         self.no_header = no_header
+
 
 def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) -> str:
     """Encode a KV3File or value to UTF-8 Text."""
@@ -23,13 +24,15 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
     if not options.no_header:
         text += str(kv3.KV3Header(encoding=encoding, format=format)) + "\n"
 
-    def value_serialize(value: kv3.ValueType, indentation_level = 0, dictionary_value = False) -> str:
-        indent = ("\t" * (indentation_level))
-        indent_nested = ("\t" * (indentation_level + 1))
+    def value_serialize(
+        value: kv3.ValueType, indentation_level=0, dictionary_value=False
+    ) -> str:
+        indent = "\t" * (indentation_level)
+        indent_nested = "\t" * (indentation_level + 1)
         match value:
             case kv3.flagged_value(value, flags):
                 if flags & kv3.Flag.multilinestring:
-                    return  f'"""\n{value}"""'
+                    return f'"""\n{value}"""'
                 if flags:
                     return f"{flags}:{value_serialize(value)}"
                 return value_serialize(value)
@@ -51,12 +54,18 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
                 return '"' + value + '"'
             case list():
                 # should we check only the first value?
-                qualifies_for_sameline = len(value) <= 6 and all(isinstance(item, (int, float)) == True for item in value)
+                qualifies_for_sameline = len(value) <= 6 and all(
+                    isinstance(item, (int, float)) == True for item in value
+                )
                 if qualifies_for_sameline:
-                    return "[" + ", ".join(value_serialize(item) for item in value) + "]"
+                    return (
+                        "[" + ", ".join(value_serialize(item) for item in value) + "]"
+                    )
                 s = f"\n{indent}[\n"
                 for item in value:
-                    s += indent_nested + (value_serialize(item, indentation_level+1) + ",\n")
+                    s += indent_nested + (
+                        value_serialize(item, indentation_level + 1) + ",\n"
+                    )
                 return s + indent + "]"
             case dict():
                 s = indent + "{\n"
@@ -65,14 +74,17 @@ def encode(kv3file: kv3.KV3File | kv3.ValueType, options=KV3EncoderOptions()) ->
                 for key, value in value.items():
                     if not key.isidentifier():
                         key = '"' + key + '"'
-                    s += indent_nested + f"{key} = {value_serialize(value, indentation_level+1, dictionary_value=True)}\n"
+                    s += (
+                        indent_nested
+                        + f"{key} = {value_serialize(value, indentation_level+1, dictionary_value=True)}\n"
+                    )
                 return s + indent + "}"
             case array.array():
-                return "[ ]" # TODO
+                return "[ ]"  # TODO
             case bytes() | bytearray():
                 return f"#[{' '.join(f'{b:02x}' for b in value)}]"
             case _:
                 raise TypeError(f"Invalid type {type(value)} for KV3 value.")
 
-    text += value_serialize(value) + '\n'
+    text += value_serialize(value) + "\n"
     return text

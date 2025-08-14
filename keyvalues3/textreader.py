@@ -40,20 +40,25 @@ kv3grammar = parsimonious.Grammar(
         encoding = "encoding:" identifier ":version" guid
         format = "format:" identifier ":version" guid
             guid = ~r"{[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}}"i
-    """ + common
+    """
+    + common
 )
 
 kv3grammar_noheader = parsimonious.Grammar(
     """
     kv3_noheader = ws* data ws*
-    """ + common
+    """
+    + common
 )
+
 
 class KV3TextReader(parsimonious.NodeVisitor):
     grammar = kv3grammar
     unwrapped_exceptions: tuple[type[BaseException], ...] = (ValueError,)
+
     class list_of_nodes(list):
         pass
+
     class NonObject(object):
         def __bool__(self):
             return False
@@ -66,6 +71,7 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return super().parse(text)
         except parsimonious.exceptions.ParseError as e:
             raise kv3.KV3DecodeError("KV3 Text " + str(e)) from e
+
     loads = parse
     read = parse
 
@@ -74,9 +80,13 @@ class KV3TextReader(parsimonious.NodeVisitor):
 
     @staticmethod
     def is_object(node):
-        return node is not KV3TextReader.non_object and not isinstance(node, KV3TextReader.list_of_nodes)
+        return node is not KV3TextReader.non_object and not isinstance(
+            node, KV3TextReader.list_of_nodes
+        )
 
-    def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.ValueType]) -> kv3.KV3File:
+    def visit_kv3(
+        self, node, visited_children: list[kv3.KV3Header | kv3.ValueType]
+    ) -> kv3.KV3File:
         header = visited_children[0]
         if not isinstance(header, kv3.KV3Header):
             raise ValueError("kv3 has invalid header")
@@ -85,15 +95,22 @@ class KV3TextReader(parsimonious.NodeVisitor):
         except StopIteration:
             raise ValueError("kv3 contains no data")
         else:
-            return kv3.KV3File(value=data, format=header.format, original_encoding=header.encoding)
+            return kv3.KV3File(
+                value=data, format=header.format, original_encoding=header.encoding
+            )
 
     def visit_header(self, _, visited_children) -> kv3.KV3Header:
         return kv3.KV3Header(encoding=visited_children[4], format=visited_children[6])
 
     def visit_encoding(self, _, visited_children) -> kv3.Encoding:
-        return kv3.Encoding(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
+        return kv3.Encoding(
+            name=visited_children[1].text, version=uuid.UUID(visited_children[3].text)
+        )
+
     def visit_format(self, _, visited_children) -> kv3.Format:
-        return kv3.Format(name=visited_children[1].text, version=uuid.UUID(visited_children[3].text))
+        return kv3.Format(
+            name=visited_children[1].text, version=uuid.UUID(visited_children[3].text)
+        )
 
     def visit_data(self, node, visited_children) -> kv3.ValueType:
         return visited_children[0]
@@ -102,7 +119,9 @@ class KV3TextReader(parsimonious.NodeVisitor):
         return visited_children[0]
 
     def visit_value_flagged(self, _, visited_children) -> kv3.flagged_value:
-        return kv3.flagged_value(value=visited_children[1], flags=visited_children[0][0])
+        return kv3.flagged_value(
+            value=visited_children[1], flags=visited_children[0][0]
+        )
 
     def visit_flags(self, _, visited_children) -> kv3.Flag:
         flag = kv3.Flag(0)
@@ -114,9 +133,15 @@ class KV3TextReader(parsimonious.NodeVisitor):
         except KeyError as e:
             raise ValueError(f"Invalid flag {e.args[0]!r}") from e
 
-    def visit_null(self, *_): return None
-    def visit_true(self, *_): return True
-    def visit_false(self, *_): return False
+    def visit_null(self, *_):
+        return None
+
+    def visit_true(self, *_):
+        return True
+
+    def visit_false(self, *_):
+        return False
+
     def visit_number(self, node, _) -> int | float:
         sign, number = node
         sign = sign.text if sign else ""
@@ -127,24 +152,35 @@ class KV3TextReader(parsimonious.NodeVisitor):
             return float(sign + number.text)
         if groups[2] is not None:
             # scientific notation
-            return float(sign + groups[0] + groups[2].split('.')[0])
+            return float(sign + groups[0] + groups[2].split(".")[0])
         if groups[1] is None:
             # no decimal point
             return int(sign + groups[0])
         return float(sign + groups[0])
 
-    def visit_quoted_string(self, node, _): return node.text[1:-1].encode('raw_unicode_escape').decode('unicode_escape')
+    def visit_quoted_string(self, node, _):
+        return node.text[1:-1].encode("raw_unicode_escape").decode("unicode_escape")
+
     def visit_multiline_string(self, node, _):
         return kv3.flagged_value(node.match.group(1), kv3.Flag.multilinestring)
-    #def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
+
+    # def visit_binary_blob(self, node, visited_children): return bytes.fromhex(node.text[2:-1])
 
     def visit_array(self, node, visited_children) -> list:
         return visited_children[1]
 
     def visit_items(self, node, visited_children) -> list:
         rv = []
-        items_comma = visited_children[0] if isinstance(visited_children[0], KV3TextReader.list_of_nodes) else []
-        item_no_comma = visited_children[2] if isinstance(visited_children[2], KV3TextReader.list_of_nodes) else []
+        items_comma = (
+            visited_children[0]
+            if isinstance(visited_children[0], KV3TextReader.list_of_nodes)
+            else []
+        )
+        item_no_comma = (
+            visited_children[2]
+            if isinstance(visited_children[2], KV3TextReader.list_of_nodes)
+            else []
+        )
         for child in itertools.chain(items_comma, item_no_comma):
             if child is None:
                 continue
@@ -164,7 +200,9 @@ class KV3TextReader(parsimonious.NodeVisitor):
             rv[kvp[0]] = kvp[1]
         return rv
 
-    def visit_pair(self, node, visited_children) -> tuple[str, None | object | kv3.flagged_value]:
+    def visit_pair(
+        self, node, visited_children
+    ) -> tuple[str, None | object | kv3.flagged_value]:
         it = (child for child in visited_children if self.is_object(child))
         return next(it), next(it)
 
@@ -175,16 +213,20 @@ class KV3TextReader(parsimonious.NodeVisitor):
         return node.text
 
     def generic_visit(self, node, visited_children):
-        """ The generic visit method. """
-        if node.expr_name == 'ws':
+        """The generic visit method."""
+        if node.expr_name == "ws":
             return None
         if len(visited_children):
             return KV3TextReader.list_of_nodes(visited_children)
         return node if node.expr_name else KV3TextReader.non_object
 
+
 class KV3TextReaderNoHeader(KV3TextReader):
     grammar = kv3grammar_noheader
-    def visit_kv3_noheader(self, node, visited_children: list[kv3.ValueType]) -> kv3.ValueType:
+
+    def visit_kv3_noheader(
+        self, node, visited_children: list[kv3.ValueType]
+    ) -> kv3.ValueType:
         try:
             data = next(data for data in visited_children if self.is_object(data))
         except StopIteration:

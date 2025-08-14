@@ -12,7 +12,7 @@ Run with:
 from pathlib import Path
 
 # dota 2 path
-dota2_path =  Path(r'D:\Games\steamapps\common\dota 2 beta')
+dota2_path = Path(r"D:\Games\steamapps\common\dota 2 beta")
 MAX_FILES = 100
 
 import keyvalues3
@@ -20,8 +20,11 @@ import time
 
 start = time.time()
 count = 0
+
+
 def finish(count: int):
     print(f"Ran through {count} files in", time.time() - start, "seconds")
+
 
 for vpcf in (dota2_path / "content").glob("**/*.vpcf"):
     if count >= MAX_FILES:
