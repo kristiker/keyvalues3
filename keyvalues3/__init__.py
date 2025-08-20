@@ -41,13 +41,16 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
         data = binary_stream.read()
         binary_stream.seek(0)
         
-        # Check magic
-        magic = data[:4]
-        if not BinaryMagics.is_defined(magic):
-            raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
-
         # Use the binary reader to parse the data
         buffer = MemoryBuffer(data)
+        
+        # Check magic
+        magic = buffer.read(4)
+        if not BinaryMagics.is_defined(magic):
+            raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
+        
+        # Reset buffer position for read_valve_keyvalue3
+        buffer.seek(0)
         value = read_valve_keyvalue3(buffer)
         
         # Determine encoding based on the binary format
