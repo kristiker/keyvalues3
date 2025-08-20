@@ -46,28 +46,30 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
         if not BinaryMagics.is_defined(magic):
             raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
 
-        # For now, only support VKV3 (legacy) format
-        if magic != BinaryMagics.VKV3:
-            raise NotImplementedError("Unsupported binary KV3 magic: " + repr(magic))
-
         # Use the binary reader to parse the data
         buffer = MemoryBuffer(data)
         value = read_valve_keyvalue3(buffer)
         
         # Determine encoding based on the binary format
-        # VKV3 can be uncompressed, block compressed, or LZ4
-        buffer.seek(4)  # Skip magic
-        encoding_bytes = buffer.read(16)
-        format_bytes = buffer.read(16)
-        
-        if encoding_bytes == ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
-            original_encoding = ENCODING_BINARY_UNCOMPRESSED
-        elif encoding_bytes == ENCODING_BINARY_BLOCK_LZ4.version.bytes_le:
-            original_encoding = ENCODING_BINARY_BLOCK_LZ4
-        elif encoding_bytes == ENCODING_BINARY_BLOCK_COMPRESSED.version.bytes_le:
-            original_encoding = ENCODING_BINARY_BLOCK_COMPRESSED
+        magic_enum = BinaryMagics(magic)
+        if magic_enum == BinaryMagics.VKV3:
+            # VKV3 can be uncompressed, block compressed, or LZ4
+            buffer.seek(4)  # Skip magic
+            encoding_bytes = buffer.read(16)
+            format_bytes = buffer.read(16)
+            
+            if encoding_bytes == ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
+                original_encoding = ENCODING_BINARY_UNCOMPRESSED
+            elif encoding_bytes == ENCODING_BINARY_BLOCK_LZ4.version.bytes_le:
+                original_encoding = ENCODING_BINARY_BLOCK_LZ4
+            elif encoding_bytes == ENCODING_BINARY_BLOCK_COMPRESSED.version.bytes_le:
+                original_encoding = ENCODING_BINARY_BLOCK_COMPRESSED
+            else:
+                # Default to uncompressed for unknown encoding
+                original_encoding = ENCODING_BINARY_UNCOMPRESSED
         else:
-            # Default to uncompressed for unknown encoding
+            # For newer formats (KV3_01-KV3_05), we don't have specific encoding detection yet
+            # Default to a generic binary encoding
             original_encoding = ENCODING_BINARY_UNCOMPRESSED
 
         return KV3File(value, original_encoding=original_encoding)

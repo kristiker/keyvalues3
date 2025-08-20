@@ -40,8 +40,8 @@ def test_api_read_binary():
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["stringValue"] == "hello world"
 
-    # good magic, but not implemented
-    with pytest.raises(NotImplementedError, match="Unsupported binary KV3 magic"):
+    # KV3_02 format file - now supported but this specific file has invalid compression method
+    with pytest.raises(NotImplementedError, match="Invalid KV3 v2 compression method"):
         keyvalues3.read("tests/documents/binary/lightmap_query_data.kv3")
 
     # a bad magic
