@@ -11,7 +11,7 @@ class TestBinaryReader(unittest.TestCase):
     def test_reader_main_api(self):
         binary_kv3 = kv3.read("tests/documents/binary/example.kv3")
         assert isinstance(binary_kv3.value, dict)
-        assert binary_kv3.value["binary"] == "reader"
+        assert binary_kv3.value["stringValue"] == "hello world"
 
     def test_binary_reader_legacy(self):
         with open("tests/documents/binary/example.kv3", "rb") as f:

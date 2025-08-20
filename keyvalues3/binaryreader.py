@@ -397,7 +397,45 @@ class MemorySlice(MemoryBuffer):
 
 
 import lz4.block
-#from SourceIO.library.utils.rustlib import LZ4ChainDecoder, lz4_decompress, zstd_decompress_stream, zstd_decompress
+import zstandard as zstd
+
+# Replacement functions for the commented SourceIO dependencies
+def lz4_decompress(data: bytes, uncompressed_size: int) -> bytes:
+    """LZ4 decompression using the lz4 library"""
+    return lz4.block.decompress(data, uncompressed_size)
+
+def zstd_decompress_stream(data: bytes) -> bytes:
+    """ZSTD decompression using zstandard library"""
+    dctx = zstd.ZstdDecompressor()
+    return dctx.decompress(data)
+
+def zstd_decompress(data: bytes, uncompressed_size: int) -> bytes:
+    """ZSTD decompression with expected size"""
+    dctx = zstd.ZstdDecompressor()
+    return dctx.decompress(data, max_output_size=uncompressed_size)
+
+class LZ4ChainDecoder:
+    """Simple LZ4 chain decoder replacement"""
+    def __init__(self, frame_size: int, flags: int):
+        self.frame_size = frame_size
+        self.flags = flags
+        self.context = b""
+    
+    def decompress(self, data: bytes, expected_size: int) -> bytes:
+        """Decompress LZ4 data with context"""
+        try:
+            # For LZ4 chain decompression, we need to maintain context
+            # This is a simplified implementation
+            decompressed = lz4.block.decompress(data, expected_size, dict=self.context)
+            # Update context for next decompression
+            if len(decompressed) > self.frame_size:
+                self.context = decompressed[-self.frame_size:]
+            else:
+                self.context = decompressed
+            return decompressed
+        except Exception:
+            # Fallback to regular decompression if chain fails
+            return lz4.block.decompress(data, expected_size)
 
 
 @dataclass(slots=True)
@@ -453,16 +491,16 @@ def read_valve_keyvalue3(buffer: Buffer) -> kv3.ValueType:
     magic = BinaryMagics(magic)
     if magic == BinaryMagics.VKV3:
         return read_legacy(buffer)
-    """elif sig == BinaryMagics.KV3_01:
+    elif magic == BinaryMagics.KV3_01:
         return read_v1(buffer)
-    elif sig == BinaryMagics.KV3_02:
+    elif magic == BinaryMagics.KV3_02:
         return read_v2(buffer)
-    elif sig == BinaryMagics.KV3_03:
+    elif magic == BinaryMagics.KV3_03:
         return read_v3(buffer)
-    elif sig == BinaryMagics.KV3_04:
+    elif magic == BinaryMagics.KV3_04:
         return read_v4(buffer)
-    elif sig == BinaryMagics.KV3_05:
-        return read_v5(buffer)"""
+    elif magic == BinaryMagics.KV3_05:
+        return read_v5(buffer)
     raise Exception(f"Unsupported KV3 version: {magic!r}")
 
 @dataclass
@@ -723,6 +761,7 @@ def split_buffer(data_buffer: Buffer, bytes_count: int, short_count: int, int_co
 
 def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     encoding_bytes_le = compressed_buffer.read(16)
+    format_bytes_le = compressed_buffer.read(16)  # Skip format bytes
     buffer: Buffer 
 
     if encoding_bytes_le == kv3.ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
@@ -735,7 +774,7 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     else:
         raise ValueError("Unsupported Legacy encoding")
     
-    buffer.skip(16)
+    # Note: No need to skip 16 bytes here since we already read the format bytes above
     string_count = buffer.read_uint32()
     strings = [buffer.read_ascii_string() for _ in range(string_count)]
 
@@ -756,7 +795,6 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     root = context.read_value(context)
     return root
 
-"""
 def read_v1(buffer: Buffer):
     compression_method = buffer.read_uint32()
 
@@ -802,6 +840,10 @@ def read_v2(buffer: Buffer):
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
+
+    # Validate compression method - should be 0, 1, or 2
+    if compression_method not in [0, 1, 2]:
+        raise NotImplementedError(f"Invalid KV3 v2 compression method: {compression_method}. Expected 0, 1, or 2. File may be corrupted or format may be different.")
 
     bytes_count = buffer.read_uint32()
     ints_count = buffer.read_uint32()
@@ -1202,17 +1244,17 @@ def read_v5(buffer: Buffer):
         blocks_buffer = MemoryBuffer(block_data)
 
         def _read_type(context: KV3ContextNew):
-        t = context.types_buffer.read_int8()
-        mask = 63
-        if t >= 0:
-            specific_type = Specifier.UNSPECIFIED
-            pass
-        else:
-            specific_type = Specifier(context.types_buffer.read_uint8())
-        if t & 0x40 != 0:
-            raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
-            # f = BinaryTypeFlag(context.types_buffer.read_uint8())
-        return BinaryType(t & mask), specific_type
+            t = context.types_buffer.read_int8()
+            mask = 63
+            if t >= 0:
+                specific_type = Specifier.UNSPECIFIED
+                pass
+            else:
+                specific_type = Specifier(context.types_buffer.read_uint8())
+            if t & 0x40 != 0:
+                raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
+                # f = BinaryTypeFlag(context.types_buffer.read_uint8())
+            return BinaryType(t & mask), specific_type
 
     context = KV3ContextNew(
         strings=strings,
@@ -1252,5 +1294,3 @@ def decompress_lz4_chain(buffer: Buffer, decompressed_block_sizes: list[int], co
             block_size_tmp -= actual_size
             block_data += decompressed[:actual_size]
     return block_data
-
-"""
