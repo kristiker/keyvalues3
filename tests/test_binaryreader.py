@@ -2,7 +2,8 @@ import unittest
 import io
 
 import keyvalues3 as kv3
-from keyvalues3.binaryreader import read_valve_keyvalue3, MemoryBuffer
+from keyvalues3.binaryreader import read_valve_keyvalue3
+from keyvalues3.utils import MemoryBuffer
 #from keyvalues3 import KV3File
 #from keyvalues3.binaryreader import BinaryV1UncompressedReader, BinaryLZ4
 #from keyvalues3.textreader import KV3TextReader
