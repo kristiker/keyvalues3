@@ -43,9 +43,9 @@ class SimpleResourceParser:
                 self.blocks['DATA'] = ResourceBlock('DATA', 0, len(self.data), self.data)
                 return True
             
-            # Check for Valve Resource Format magic
+            # Check for simple mock resource format
             if magic == b'VKV3':
-                # This is a mock resource file
+                # This is a simple mock resource file
                 self.stream.seek(0)
                 magic = self.stream.read(4)  # VKV3
                 version = struct.unpack('<I', self.stream.read(4))[0]
@@ -57,6 +57,33 @@ class SimpleResourceParser:
                 kv3_data = self.stream.read(kv3_size)
                 
                 self.blocks['DATA'] = ResourceBlock('DATA', kv3_offset, kv3_size, kv3_data)
+                return True
+            
+            # Check for more realistic VRF format
+            if magic == b'\x03VKV':
+                # This is a more realistic resource file format
+                self.stream.seek(0)
+                magic = self.stream.read(4)  # \x03VKV
+                version = struct.unpack('<I', self.stream.read(4))[0]
+                file_size = struct.unpack('<Q', self.stream.read(8))[0]
+                num_blocks = struct.unpack('<I', self.stream.read(4))[0]
+                
+                # Read block entries
+                for _ in range(num_blocks):
+                    block_type = self.stream.read(4).rstrip(b'\x00').decode('ascii', errors='ignore')
+                    block_flags = struct.unpack('<I', self.stream.read(4))[0]
+                    block_offset = struct.unpack('<Q', self.stream.read(8))[0]
+                    block_size = struct.unpack('<Q', self.stream.read(8))[0]
+                    block_crc = struct.unpack('<I', self.stream.read(4))[0]
+                    
+                    # Read block data
+                    current_pos = self.stream.tell()
+                    self.stream.seek(block_offset)
+                    block_data = self.stream.read(block_size)
+                    self.stream.seek(current_pos)
+                    
+                    self.blocks[block_type] = ResourceBlock(block_type, block_offset, block_size, block_data)
+                
                 return True
                 
             return False

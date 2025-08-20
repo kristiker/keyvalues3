@@ -36,6 +36,27 @@ class TestResourceParser(unittest.TestCase):
                     pass
                 except Exception as e:
                     self.fail(f"Unexpected error parsing KV3 data from {resource_file.name}: {e}")
+        
+        # Also test more realistic .vrf files
+        for resource_file in self.resource_dir.glob('*.vrf'):
+            with self.subTest(file=resource_file.name):
+                # Read the resource file
+                resource_data = resource_file.read_bytes()
+                
+                # Extract KV3 data
+                kv3_data = extract_kv3_from_resource(resource_data)
+                self.assertIsNotNone(kv3_data, f"Failed to extract KV3 data from {resource_file.name}")
+                
+                # Verify it's valid KV3 data by parsing it
+                buffer = MemoryBuffer(kv3_data)
+                try:
+                    result = read_valve_keyvalue3(buffer)
+                    self.assertIsNotNone(result, f"Failed to parse extracted KV3 data from {resource_file.name}")
+                except NotImplementedError:
+                    # Some formats may not be implemented yet, that's expected
+                    pass
+                except Exception as e:
+                    self.fail(f"Unexpected error parsing KV3 data from {resource_file.name}: {e}")
     
     def test_extract_from_raw_kv3_file(self):
         """Test that the parser handles raw KV3 files correctly."""
@@ -55,6 +76,27 @@ class TestResourceParser(unittest.TestCase):
     def test_integration_with_main_api(self):
         """Test that extracted KV3 data works with the main API."""
         for resource_file in self.resource_dir.glob('*.vdata'):
+            with self.subTest(file=resource_file.name):
+                # Extract KV3 data
+                resource_data = resource_file.read_bytes()
+                kv3_data = extract_kv3_from_resource(resource_data)
+                self.assertIsNotNone(kv3_data)
+                
+                # Use with main API via BytesIO
+                from io import BytesIO
+                kv3_stream = BytesIO(kv3_data)
+                
+                try:
+                    result = kv3.read(kv3_stream)
+                    self.assertIsNotNone(result.value, f"Main API failed on extracted data from {resource_file.name}")
+                except NotImplementedError:
+                    # Some formats may not be implemented yet, that's ok
+                    pass
+                except Exception as e:
+                    self.fail(f"Unexpected error with main API on {resource_file.name}: {e}")
+        
+        # Also test with .vrf files
+        for resource_file in self.resource_dir.glob('*.vrf'):
             with self.subTest(file=resource_file.name):
                 # Extract KV3 data
                 resource_data = resource_file.read_bytes()
