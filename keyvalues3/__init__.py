@@ -6,9 +6,11 @@ import os, io, typing
 from .keyvalues3 import *
 from .kv3file import KV3File
 from .binarywriter import BinaryMagics
+from . import binarywriter
 from .textreader import KV3TextReader
 from . import textwriter
-from .binaryreader import read_valve_keyvalue3, MemoryBuffer
+from .binaryreader import read_valve_keyvalue3
+from .utils import MemoryBuffer
 
 __version__ = "0.3"
 __all__ = [ "read", "write" ]
