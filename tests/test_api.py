@@ -34,11 +34,11 @@ def test_api_read_from_stream():
 def test_api_read_binary():
     binary_kv3 = keyvalues3.read("tests/documents/binary/example.kv3")
     assert isinstance(binary_kv3.value, dict)
-    assert binary_kv3.value["binary"] == "reader"
+    assert binary_kv3.value["stringValue"] == "hello world"
 
     binary_kv3 = keyvalues3.read("tests/documents/binary/example_lz4.kv3")
     assert isinstance(binary_kv3.value, dict)
-    assert binary_kv3.value["binary"] == "reader"
+    assert binary_kv3.value["stringValue"] == "hello world"
 
     # good magic, but not implemented
     with pytest.raises(NotImplementedError, match="Unsupported binary KV3 magic"):

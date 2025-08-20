@@ -723,6 +723,7 @@ def split_buffer(data_buffer: Buffer, bytes_count: int, short_count: int, int_co
 
 def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     encoding_bytes_le = compressed_buffer.read(16)
+    format_bytes_le = compressed_buffer.read(16)  # Skip format bytes
     buffer: Buffer 
 
     if encoding_bytes_le == kv3.ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
@@ -735,7 +736,7 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     else:
         raise ValueError("Unsupported Legacy encoding")
     
-    buffer.skip(16)
+    # Note: No need to skip 16 bytes here since we already read the format bytes above
     string_count = buffer.read_uint32()
     strings = [buffer.read_ascii_string() for _ in range(string_count)]
 
