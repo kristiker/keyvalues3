@@ -178,28 +178,6 @@ def _read_array_typed_helper(context: KV3ContextNew, count):
 
     return b"";
 
-    if data_type == BinaryType.double_zero:
-        return np.zeros(count, np.float64)
-    elif data_type == BinaryType.double_one:
-        return np.ones(count, np.float64)
-    elif data_type == BinaryType.int64_zero:
-        return np.zeros(count, np.int64)
-    elif data_type == BinaryType.int64_one:
-        return np.ones(count, np.int64)
-    elif data_type == BinaryType.double:
-        return np.frombuffer(buffers.double_buffer.read(8 * count), np.float64)
-    elif data_type == BinaryType.int64:
-        return np.frombuffer(buffers.double_buffer.read(8 * count), np.int64)
-    elif data_type == BinaryType.uint64:
-        return np.frombuffer(buffers.double_buffer.read(8 * count), np.uint64)
-    elif data_type == BinaryType.int32:
-        return np.frombuffer(buffers.int_buffer.read(4 * count), np.int32)
-    elif data_type == BinaryType.uint32:
-        return np.frombuffer(buffers.int_buffer.read(4 * count), np.uint32)
-    else:
-        reader = _kv3_readers[data_type]
-        return TypedArray(data_type, data_specifier, [reader(context, data_specifier) for _ in range(count)])
-
 def _read_array_typed(context: KV3ContextNew):
     count = context.active_buffer.int_buffer.read_uint32()
     array = _read_array_typed_helper(context, count)
