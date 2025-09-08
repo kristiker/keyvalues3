@@ -66,8 +66,6 @@ class Specifier(IntEnum):
 
 from dataclasses import dataclass
 from typing import Optional, Callable
-import numpy as np
-
 
 @dataclass(slots=True)
 class KV3Context:
@@ -345,7 +343,7 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
         buffer = _legacy_block_decompress(compressed_buffer)
     elif encoding_bytes_le == kv3.ENCODING_BINARY_BLOCK_LZ4.version.bytes_le:
         decompressed_size = compressed_buffer.read_uint32()
-        buffer = MemoryBuffer(lz4.block.decompress(compressed_buffer.read(), decompressed_size))
+        buffer = MemoryBuffer(lz4_decompress(compressed_buffer.read(), decompressed_size))
     else:
         raise ValueError("Unsupported Legacy encoding")
     
