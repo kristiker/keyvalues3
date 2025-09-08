@@ -72,6 +72,11 @@ class RenderMeshFile(_Node):  # _Node defines _class, name, notes, and children 
 ```
 You can find more ModelDoc dataclasses [here](https://github.com/kristiker/source1import/blob/6644b3133cc79b3c455cc91ab4259f3f0e27d797/utils/shared/modeldoc.py#L61-L88).
 
+## Developing
+`python --version` Ensure you're using Python 3.11 or greater.
+`python -m pip install .`
+`python -m pip install pytest` I don't know why this is needed
+`python -m pytest`
 
 ## Credits
 Valve Corporation® for making KeyValues3.  

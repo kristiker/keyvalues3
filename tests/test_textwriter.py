@@ -116,12 +116,18 @@ def test_text_writer_writes_dict():
 
     assert '"key with spaces"' in textwriter.encode({"key with spaces": 5})
     assert '"key.co.uk" =' in textwriter.encode({"key.co.uk": 5})
+    
+    keys_with_weird_chars = [
+        'escaped " quote in key',
+        'escaped \n newline in key',
+        'escaped \\ backslash in key'
+    ]
 
-    assert (key:="escaped \" quote in key") in textwriter.encode({key: 5})
-    assert (key:="escaped \n newline in key") in textwriter.encode({key: 5})
-    assert (key:="escaped \\ backslash in key") in textwriter.encode({key: 5})
+    for key in keys_with_weird_chars:
+        assert key in textwriter.encode({key: 5})
 
-    assert (value:="foo \"bar\"") in textwriter.encode({"key": value})
+    value = 'foo \n bar'
+    assert value in textwriter.encode({"key": value})
 
 
 def util_make_indented_kv3(code_kv3: str, code_indentation_level=1) -> str:
