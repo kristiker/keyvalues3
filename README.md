@@ -80,4 +80,5 @@ You can find more ModelDoc dataclasses [here](https://github.com/kristiker/sourc
 
 ## Credits
 Valve Corporation® for making KeyValues3.  
-[ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat/blob/master/ValveResourceFormat/Resource/ResourceTypes/BinaryKV3.cs) for reverse engineering the binary formats.
+[ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat) for the binary reader.
+[SourceIO by REDxEYE](https://github.com/REDxEYE/SourceIO) for the binary writer.
