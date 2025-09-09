@@ -42,19 +42,19 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
         # Read all data from stream
         data = binary_stream.read()
         binary_stream.seek(0)
-        
+
         # Use the binary reader to parse the data
         buffer = MemoryBuffer(data)
-        
+
         # Check magic
         magic = buffer.read(4)
         if not BinaryMagics.is_defined(magic):
             raise InvalidKV3Magic("Invalid binary KV3 magic: " + repr(magic))
-        
+
         # Reset buffer position for read_valve_keyvalue3
         buffer.seek(0)
         value = read_valve_keyvalue3(buffer)
-        
+
         # Determine encoding based on the binary format
         magic_enum = BinaryMagics(magic)
         if magic_enum == BinaryMagics.VKV3:
@@ -62,7 +62,7 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
             buffer.seek(4)  # Skip magic
             encoding_bytes = buffer.read(16)
             format_bytes = buffer.read(16)
-            
+
             if encoding_bytes == ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
                 original_encoding = ENCODING_BINARY_UNCOMPRESSED
             elif encoding_bytes == ENCODING_BINARY_BLOCK_LZ4.version.bytes_le:
@@ -158,7 +158,7 @@ def write(kv3: KV3File | ValueType, path_or_stream: str | os.PathLike | typing.I
             binarywriter.BinaryLZ4(kv3).write(fp)
         else:
             raise NotImplementedError(f"Encoding type {encoding} not implemented.")
-    
+
     if is_file:
         fp.close()
 
