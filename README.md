@@ -46,9 +46,11 @@ pip install keyvalues3
 | ----------- | :-----: | :-------: |
 | Text UTF-8 | Yes ✔️ | Yes ✔️ |
 | Text UTF-8 Headerless | Yes ✔️ | Yes ✔️ |
-| Binary Uncompressed | No ⛔ | Yes ✔️ |
-| Binary LZ4 | No ⛔ | Yes ✔️ |
-| Binary (Other newer) | No ⛔ | No ⛔ |
+| VKV Binary Uncompressed | Yes ✔️ | Yes ✔️ |
+| VKV Binary LZ4 | Yes ✔️ | Yes ✔️ |
+| 3VK Binary V1 | Yes ✔️ | No ⛔ |
+| 3VK Binary V2 | Yes ✔️ | No ⛔ |
+
 
 ## Using dataclasses
 Dataclasses (marked with `@dataclass`) are also supported for serialization (uses `asdict()`)

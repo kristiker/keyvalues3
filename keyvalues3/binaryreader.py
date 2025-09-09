@@ -388,6 +388,7 @@ def read_v1(buffer: Buffer):
 
 
 def read_v2(buffer: Buffer):
+    format_bytes_le = buffer.read(16)  # Skip format bytes
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()
@@ -460,20 +461,8 @@ def read_v2(buffer: Buffer):
                 for uncompressed_block_size in block_sizes:
                     block_data += data_buffer.read(uncompressed_block_size)
             elif compression_method == 1:
-                cd = LZ4ChainDecoder(compression_frame_size, 0)
-                for block_size in block_sizes:
-                    block_size_tmp = block_size
-                    while data_buffer.tell() < data_buffer.size() and block_size_tmp > 0:
-                        compressed_block_size = data_buffer.read_uint16()
-                        decompressed = cd.decompress(buffer.read(compressed_block_size), compression_frame_size)
-                        if len(decompressed) > block_size_tmp:
-                            decompressed = decompressed[:block_size_tmp]
-                            block_size_tmp = 0
-                        elif block_size_tmp < 0:
-                            raise ValueError("Failed to decompress blocks!")
-                        else:
-                            block_size_tmp -= len(decompressed)
-                        block_data += decompressed
+                compressed_sizes = [data_buffer.read_uint16() for _ in range(data_buffer.remaining() // 2)]
+                block_data = decompress_lz4_chain(buffer, block_sizes, compressed_sizes, compression_frame_size)
             elif compression_method == 2:
                 block_data += data_buffer.read()
             else:
