@@ -82,5 +82,5 @@ You can find more ModelDoc dataclasses [here](https://github.com/kristiker/sourc
 
 ## Credits
 Valve Corporation® for making KeyValues3.  
-[ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat) for the binary reader.
-[SourceIO by REDxEYE](https://github.com/REDxEYE/SourceIO) for the binary writer.
+[ValveResourceFormat](https://github.com/ValveResourceFormat/ValveResourceFormat) for the legacy binary reader reference.  
+[SourceIO by REDxEYE](https://github.com/REDxEYE/SourceIO) for new binary reader code.  
