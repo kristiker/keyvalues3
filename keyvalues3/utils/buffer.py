@@ -19,7 +19,7 @@ class Readable(Protocol):
     @classmethod
     def from_buffer(cls: Type[T], buffer: 'Buffer') -> T:
         ...
- 
+
 class Buffer(abc.ABC, io.RawIOBase):
     def __init__(self):
         io.RawIOBase.__init__(self)
@@ -332,7 +332,7 @@ class WritableMemoryBuffer(io.BytesIO, Buffer):
         if size == -1:
             return MemoryBuffer(self.data[offset:])
         return MemoryBuffer(self.data[offset:offset + size])
-    
+
 class MemorySlice(MemoryBuffer):
     def __init__(self, buffer: Union[bytes, bytearray, memoryview], offset: int):
         super().__init__(buffer)

@@ -9,7 +9,7 @@ Copyright (c) 2020 REDxEYE
 import keyvalues3 as kv3
 from keyvalues3.binarywriter import BinaryMagics, BinaryType
 from keyvalues3.utils import (
-    Buffer, MemoryBuffer, WritableMemoryBuffer, 
+    Buffer, MemoryBuffer, WritableMemoryBuffer,
     lz4_decompress, zstd_decompress_stream, zstd_decompress, LZ4ChainDecoder,
     _legacy_block_decompress, zstd_decompress_stream_wrp, lz4_decompress_wrp,
     decompress_lz4_chain, KV3Buffers, split_buffer
@@ -262,7 +262,7 @@ def _read_value_legacy(context: KV3ContextNew):
     reader = _kv3_readers[value_type]
     if reader is None:
         raise NotImplementedError(f"Reader for {value_type!r} not implemented")
-    
+
     value = reader(context)
 
     if specifier > Specifier.NONE and specifier < Specifier.ENTITY_NAME:
@@ -313,7 +313,7 @@ def _read_type_v3(context: KV3ContextNew):
 def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     encoding_bytes_le = compressed_buffer.read(16)
     format_bytes_le = compressed_buffer.read(16)  # Skip format bytes
-    buffer: Buffer 
+    buffer: Buffer
 
     if encoding_bytes_le == kv3.ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
         buffer = MemoryBuffer(compressed_buffer.read())
@@ -324,7 +324,7 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
         buffer = MemoryBuffer(lz4_decompress(compressed_buffer.read(), decompressed_size))
     else:
         raise ValueError("Unsupported Legacy encoding")
-    
+
     # Note: No need to skip 16 bytes here since we already read the format bytes above
     string_count = buffer.read_uint32()
     strings = [buffer.read_ascii_string() for _ in range(string_count)]

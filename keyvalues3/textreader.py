@@ -22,7 +22,7 @@ common = """
         number = ~r"[+-]?" (~r"(((?>\\d+[\\.](?>\\d+)?)|(?>(?>\\d+)?[\\.]\\d+))|\\d+)([Ee][+-]?(?1))?" / ~r"nan"i / ~r"inf"i)
         quoted_string = ~r'"(?:[^"\\\\]|\\\\.)*"'
         #quoted_string_old_no_escaped = ~r'"[^"]*"'
-    
+
         multiline_string = ~r'\"{3}\\r?\\n(.*?)\\"{3}'us
         binary_blob = '#[' ws* (~r'[A-F0-9a-f]{2}' ws*)* ']'
 
