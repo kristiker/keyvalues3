@@ -40,9 +40,9 @@ def test_api_read_binary():
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["stringValue"] == "hello world"
 
-    # KV3_02 format file - now supported but this specific file has invalid compression method
-    with pytest.raises(NotImplementedError, match="Invalid KV3 v2 compression method"):
-        keyvalues3.read("tests/documents/binary/lightmap_query_data.kv3")
+    lightmap_query_data = keyvalues3.read("tests/documents/binary/lightmap_query_data.kv3")
+    assert lightmap_query_data['vertex_count'] == 4462
+    #assert lightmap_query_data['vertices'][-1] == 0
 
     # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
