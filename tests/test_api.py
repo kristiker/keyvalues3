@@ -58,6 +58,14 @@ def test_api_read_binary():
     red2 = keyvalues3.read("tests/documents/binary/v3.lz4.kv3.bin")
     assert red2['m_SearchableUserData']['LightSim_DiffuseAlbedoTexture'] == "dev/helper/testgrid_color_tga_9e9cdde1.vtex"
 
+    # kv3 v4
+    ctrl = keyvalues3.read("tests/documents/binary/v4.kv3.bin")
+    ctrl['embedded_meshes'][0]['name'] == "unnamed_1"
+
+    # kv3 v5
+    phys = keyvalues3.read("tests/documents/binary/v5.kv3.bin")
+    phys['m_parts'][0]['m_bOverrideMassCenter'] == False
+
     # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
         keyvalues3.read(io.BytesIO(b"VDF3\x01\x03\x03\x07"))

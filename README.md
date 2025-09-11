@@ -51,6 +51,8 @@ pip install keyvalues3
 | Binary (3VK) V1 | Yes ✔️ | No ⛔ |
 | Binary (3VK) V2 | Yes ✔️ | No ⛔ |
 | Binary (3VK) V3 | Yes ✔️ | No ⛔ |
+| Binary (3VK) V4 | Yes ✔️ | No ⛔ |
+| Binary (3VK) V5 | Yes ✔️ | No ⛔ |
 
 
 ## Using dataclasses
