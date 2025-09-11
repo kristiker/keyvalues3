@@ -366,8 +366,9 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     return root
 
 def read_v1(buffer: Buffer):
+    format_bytes_le = buffer.read(16)  # Skip format bytes
+    
     compression_method = buffer.read_uint32()
-
     bytes_count = buffer.read_uint32()
     ints_count = buffer.read_uint32()
     doubles_count = buffer.read_uint32()

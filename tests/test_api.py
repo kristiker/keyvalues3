@@ -40,6 +40,10 @@ def test_api_read_binary():
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["stringValue"] == "hello world"
 
+    # kv3 v1
+    entitylump = keyvalues3.read("tests/documents/binary/v1.kv3.bin")
+    assert entitylump['m_flags'] == 'ENTITY_LUMP_NONE'
+
     # kv3 v2
     lightmap_query_data = keyvalues3.read("tests/documents/binary/v2.lz4chain.kv3.bin")
     assert lightmap_query_data['vertex_count'] == 4462
