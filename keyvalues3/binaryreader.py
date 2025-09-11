@@ -344,7 +344,6 @@ def read_legacy(compressed_buffer: Buffer) -> kv3.ValueType:
     else:
         raise ValueError("Unsupported Legacy encoding")
 
-    # Note: No need to skip 16 bytes here since we already read the format bytes above
     string_count = buffer.read_uint32()
     strings = [buffer.read_ascii_string() for _ in range(string_count)]
 

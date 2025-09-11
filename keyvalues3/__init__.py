@@ -54,14 +54,13 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
         # Reset buffer position for read_valve_keyvalue3
         buffer.seek(0)
         value = read_valve_keyvalue3(buffer)
+        buffer.seek(4)  # Skip magic
 
         # Determine encoding based on the binary format
         magic_enum = BinaryMagics(magic)
         if magic_enum == BinaryMagics.VKV3:
             # VKV3 can be uncompressed, block compressed, or LZ4
-            buffer.seek(4)  # Skip magic
             encoding_bytes = buffer.read(16)
-            format_bytes = buffer.read(16)
 
             if encoding_bytes == ENCODING_BINARY_UNCOMPRESSED.version.bytes_le:
                 original_encoding = ENCODING_BINARY_UNCOMPRESSED
@@ -70,14 +69,13 @@ def read(path_or_stream: str | os.PathLike | typing.IO) -> KV3File:
             elif encoding_bytes == ENCODING_BINARY_BLOCK_COMPRESSED.version.bytes_le:
                 original_encoding = ENCODING_BINARY_BLOCK_COMPRESSED
             else:
-                # Default to uncompressed for unknown encoding
                 original_encoding = ENCODING_BINARY_UNCOMPRESSED
         else:
-            # For newer formats (KV3_01-KV3_05), we don't have specific encoding detection yet
-            # Default to a generic binary encoding
-            original_encoding = ENCODING_BINARY_UNCOMPRESSED
+            # For newer formats (KV3_01-KV3_05), encoding guid is no longer stored
+            original_encoding = ENCODING_BINARY_NEW
 
-        return KV3File(value, original_encoding=original_encoding)
+        format = UUID(bytes_le=buffer.read(16))
+        return KV3File(value, format, original_encoding=original_encoding)
 
     def read_text(text_stream: typing.TextIO):
         return KV3TextReader().parse(text_stream.read())
