@@ -32,16 +32,16 @@ def test_api_read_from_stream():
     
 
 def test_api_read_binary():
-    binary_kv3 = keyvalues3.read("tests/documents/binary/example.kv3")
+    binary_kv3 = keyvalues3.read("tests/documents/binary/legacy.kv3.bin")
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["stringValue"] == "hello world"
 
-    binary_kv3 = keyvalues3.read("tests/documents/binary/example_lz4.kv3")
+    binary_kv3 = keyvalues3.read("tests/documents/binary/legacy.lz4.kv3.bin")
     assert isinstance(binary_kv3.value, dict)
     assert binary_kv3.value["stringValue"] == "hello world"
 
     # kv3 v2
-    lightmap_query_data = keyvalues3.read("tests/documents/binary/lightmap_query_data.kv3")
+    lightmap_query_data = keyvalues3.read("tests/documents/binary/v2.lz4chain.kv3.bin")
     assert lightmap_query_data['vertex_count'] == 4462
 
     assert ' '.join(f'{b:02X}' for b in lightmap_query_data['vertices'][-4:]) == '0E 82 C6 4C'

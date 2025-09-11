@@ -10,12 +10,12 @@ from keyvalues3.utils import MemoryBuffer
 
 class TestBinaryReader(unittest.TestCase):
     def test_reader_main_api(self):
-        binary_kv3 = kv3.read("tests/documents/binary/example.kv3")
+        binary_kv3 = kv3.read("tests/documents/binary/legacy.kv3.bin")
         assert isinstance(binary_kv3.value, dict)
         assert binary_kv3.value["stringValue"] == "hello world"
 
     def test_binary_reader_legacy(self):
-        with open("tests/documents/binary/example.kv3", "rb") as f:
+        with open("tests/documents/binary/legacy.kv3.bin", "rb") as f:
             buffer = MemoryBuffer(f.read())
             binary_kv3_value = read_valve_keyvalue3(buffer)
             assert isinstance(binary_kv3_value, dict)
