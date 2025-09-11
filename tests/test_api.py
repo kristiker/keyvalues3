@@ -44,13 +44,15 @@ def test_api_read_binary():
     lightmap_query_data = keyvalues3.read("tests/documents/binary/v2.lz4chain.kv3.bin")
     assert lightmap_query_data['vertex_count'] == 4462
 
+    worldnode = keyvalues3.read("tests/documents/binary/v2.zstd.kv3.bin")
+    assert worldnode['m_nodeLightingInfo']['m_vLightmapUvScale'][0] == 1.0
+
     assert ' '.join(f'{b:02X}' for b in lightmap_query_data['vertices'][-4:]) == '0E 82 C6 4C'
     assert ' '.join(f'{b:02X}' for b in lightmap_query_data['indices'][-4:]) == '6C 11 00 00'
 
     # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
         keyvalues3.read(io.BytesIO(b"VDF3\x01\x03\x03\x07"))
-
 
 def test_api_write():
     my_object = {

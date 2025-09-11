@@ -175,8 +175,27 @@ def _read_object(context: KV3ContextNew):
 def _read_array_typed_helper(context: KV3ContextNew, count):
     buffers = context.active_buffer
     data_type, data_specifier = context.read_type(context)
-
-    return b"";
+    if data_type == BinaryType.double_zero:
+        return [0.0] * count
+    elif data_type == BinaryType.double_one:
+        return [1.0] * count
+    elif data_type == BinaryType.int64_zero:
+        return [0] * count
+    elif data_type == BinaryType.int64_one:
+        return [1] * count
+    elif data_type == BinaryType.double:
+        return [buffers.double_buffer.read_double() for _ in range(count)]
+    elif data_type == BinaryType.int64:
+        return [buffers.double_buffer.read_int64() for _ in range(count)]
+    elif data_type == BinaryType.uint64:
+        return [buffers.double_buffer.read_uint64() for _ in range(count)]
+    elif data_type == BinaryType.int32:
+        return [buffers.int_buffer.read_int32() for _ in range(count)]
+    elif data_type == BinaryType.uint32:
+        return [buffers.int_buffer.read_uint32() for _ in range(count)]
+    else:
+        reader = _kv3_readers[data_type]
+        return [reader(context) for _ in range(count)]
 
 def _read_array_typed(context: KV3ContextNew):
     count = context.active_buffer.int_buffer.read_uint32()
