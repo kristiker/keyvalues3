@@ -526,6 +526,7 @@ def read_v2(buffer: Buffer):
 
 
 def read_v3(buffer: Buffer):
+    format_bytes_le = buffer.read(16)  # Skip format bytes
     compression_method = buffer.read_uint32()
     compression_dict_id = buffer.read_uint16()
     compression_frame_size = buffer.read_uint16()

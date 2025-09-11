@@ -54,6 +54,10 @@ def test_api_read_binary():
     assert ' '.join(f'{b:02X}' for b in lightmap_query_data['vertices'][-4:]) == '0E 82 C6 4C'
     assert ' '.join(f'{b:02X}' for b in lightmap_query_data['indices'][-4:]) == '6C 11 00 00'
 
+    # kv3 v3
+    red2 = keyvalues3.read("tests/documents/binary/v3.lz4.kv3.bin")
+    assert red2['m_SearchableUserData']['LightSim_DiffuseAlbedoTexture'] == "dev/helper/testgrid_color_tga_9e9cdde1.vtex"
+
     # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):
         keyvalues3.read(io.BytesIO(b"VDF3\x01\x03\x03\x07"))

@@ -46,10 +46,11 @@ pip install keyvalues3
 | ----------- | :-----: | :-------: |
 | Text UTF-8 | Yes ✔️ | Yes ✔️ |
 | Text UTF-8 Headerless | Yes ✔️ | Yes ✔️ |
-| VKV Binary Uncompressed | Yes ✔️ | Yes ✔️ |
-| VKV Binary LZ4 | Yes ✔️ | Yes ✔️ |
-| 3VK Binary V1 | Yes ✔️ | No ⛔ |
-| 3VK Binary V2 | Yes ✔️ | No ⛔ |
+| Binary (VKV) Uncompressed | Yes ✔️ | Yes ✔️ |
+| Binary (3VK) LZ4 | Yes ✔️ | Yes ✔️ |
+| Binary (3VK) V1 | Yes ✔️ | No ⛔ |
+| Binary (3VK) V2 | Yes ✔️ | No ⛔ |
+| Binary (3VK) V3 | Yes ✔️ | No ⛔ |
 
 
 ## Using dataclasses
