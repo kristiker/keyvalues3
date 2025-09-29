@@ -805,18 +805,18 @@ def read_v5(buffer: Buffer):
             assert buffer.read_uint32() == 0xFFEEDD00
         blocks_buffer = MemoryBuffer(block_data)
 
-        def _read_type(context: KV3ContextNew):
-            t = context.types_buffer.read_int8()
-            mask = 63
-            if t >= 0:
-                specific_type = Specifier.UNSPECIFIED
-                pass
-            else:
-                specific_type = Specifier(context.types_buffer.read_uint8())
-            if t & 0x40 != 0:
-                raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
-                # f = BinaryTypeFlag(context.types_buffer.read_uint8())
-            return BinaryType(t & mask), specific_type
+    def _read_type(context: KV3ContextNew):
+        t = context.types_buffer.read_int8()
+        mask = 63
+        if t >= 0:
+            specific_type = Specifier.UNSPECIFIED
+            pass
+        else:
+            specific_type = Specifier(context.types_buffer.read_uint8())
+        if t & 0x40 != 0:
+            raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
+            # f = BinaryTypeFlag(context.types_buffer.read_uint8())
+        return BinaryType(t & mask), specific_type
 
     context = KV3ContextNew(
         strings=strings,
