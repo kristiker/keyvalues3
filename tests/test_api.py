@@ -60,11 +60,19 @@ def test_api_read_binary():
 
     # kv3 v4
     ctrl = keyvalues3.read("tests/documents/binary/v4.kv3.bin")
-    ctrl['embedded_meshes'][0]['name'] == "unnamed_1"
+    assert ctrl['embedded_meshes'][0]['name'] == "unnamed_1"
 
     # kv3 v5
     phys = keyvalues3.read("tests/documents/binary/v5.kv3.bin")
-    phys['m_parts'][0]['m_bOverrideMassCenter'] == False
+    assert phys['m_parts'][0]['m_bOverrideMassCenter'] == False
+
+    vdata = keyvalues3.read("tests/documents/binary/v5_with_flags.kv3.bin")
+    snd = vdata['explosive_grenade']['m_aShootSounds']['WEAPON_SOUND_RADIO_USE']
+    assert snd.flags == keyvalues3.Flag.soundevent
+    assert snd.value == "Radio.FireInTheHole"
+
+    assert vdata['weapon_g3sg1_prefab']['m_szWorldModel'].flags == keyvalues3.Flag.resource_name
+    
 
     # a bad magic
     with pytest.raises(keyvalues3.InvalidKV3Magic, match="Invalid binary KV3 magic: b'VDF3'"):

@@ -285,7 +285,16 @@ def _read_value_legacy(context: KV3ContextNew):
     value = reader(context)
 
     if specifier > Specifier.NONE and specifier < Specifier.ENTITY_NAME:
-        value = kv3.flagged_value(value, flags=kv3.Flag(specifier.value))
+        mapped_flag = {
+            Specifier.RESOURCE: kv3.Flag.resource,
+            Specifier.RESOURCE_NAME: kv3.Flag.resource_name,
+            Specifier.PANORAMA: kv3.Flag.panorama,
+            Specifier.SOUNDEVENT: kv3.Flag.soundevent,
+            Specifier.SUBCLASS: kv3.Flag.subclass,
+            
+        }[specifier.value]
+
+        value = kv3.flagged_value(value, flags=mapped_flag)
 
     return value
 
@@ -806,17 +815,16 @@ def read_v5(buffer: Buffer):
         blocks_buffer = MemoryBuffer(block_data)
 
     def _read_type(context: KV3ContextNew):
-        t = context.types_buffer.read_int8()
-        mask = 63
-        if t >= 0:
-            specific_type = Specifier.UNSPECIFIED
-            pass
-        else:
-            specific_type = Specifier(context.types_buffer.read_uint8())
-        if t & 0x40 != 0:
-            raise NotImplementedError(f"t & 0x40 != 0: {t & 0x40}")
-            # f = BinaryTypeFlag(context.types_buffer.read_uint8())
-        return BinaryType(t & mask), specific_type
+        databyte = context.types_buffer.read_uint8()
+        specifier = Specifier.UNSPECIFIED
+
+        if databyte & 0x80:
+            databyte &= 0x3F  # Remove the flag bit
+            flagValue = context.types_buffer.read_uint8()
+            if flagValue > Specifier.ENTITY_NAME.value:  # MaxPersistedFlag
+                raise Exception(f"Unexpected kv3 flag: {flagValue}")
+            specifier = Specifier(flagValue)
+        return BinaryType(databyte), specifier
 
     context = KV3ContextNew(
         strings=strings,

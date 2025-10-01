@@ -94,6 +94,7 @@ class Flag(enum.IntFlag):
     panorama = enum.auto()
     soundevent = enum.auto()
     subclass = enum.auto()
+    entity_name = enum.auto()
     def __str__(self):
         return "|".join(flag.name for flag in self.__class__ if self.value & flag)
     def __call__(self, value: ValueType):
