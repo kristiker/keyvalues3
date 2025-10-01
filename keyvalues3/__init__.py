@@ -12,7 +12,7 @@ from . import textwriter
 from .binaryreader import read_valve_keyvalue3
 from .utils import MemoryBuffer
 
-__version__ = "0.4"
+__version__ = "0.5"
 __all__ = [ "read", "write" ]
 
 #region: read
