@@ -20,6 +20,19 @@ class Test_TextReading(unittest.TestCase):
         value = KV3TextReader().parse(default_header.strip() + "\r\n" + "null")
         self.assertIsNone(value.value)
 
+    def test_parses_header_with_leading_whitespace(self):
+        # Test with single space
+        value = KV3TextReader().parse(" " + default_header + "{}")
+        self.assertEqual(value.value, {})
+        
+        # Test with multiple spaces
+        value = KV3TextReader().parse("   " + default_header + "{}")
+        self.assertEqual(value.value, {})
+        
+        # Test with tab
+        value = KV3TextReader().parse("\t" + default_header + "{}")
+        self.assertEqual(value.value, {})
+
     def test_parses_bt_config(self):
         with open("tests/documents/bt_config.kv3", "r") as f:
             kv3Nodes = kv3grammar.parse(f.read())

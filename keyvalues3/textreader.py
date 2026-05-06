@@ -35,7 +35,7 @@ common = """
 
 kv3grammar = parsimonious.Grammar(
     """
-    kv3 = header ws* data ws* # TODO: null needs whitespace after header but object doesnt
+    kv3 = ws* header ws* data ws* # TODO: null needs whitespace after header but object doesnt
     header = "<!--" ws+ "kv3" ws+ encoding ws+ format ws+ "-->"
         encoding = "encoding:" identifier ":version" guid
         format = "format:" identifier ":version" guid
@@ -77,11 +77,12 @@ class KV3TextReader(parsimonious.NodeVisitor):
         return node is not KV3TextReader.non_object and not isinstance(node, KV3TextReader.list_of_nodes)
 
     def visit_kv3(self, node, visited_children: list[kv3.KV3Header | kv3.ValueType]) -> kv3.KV3File:
-        header = visited_children[0]
-        if not isinstance(header, kv3.KV3Header):
+        # Find the header (skipping any leading whitespace nodes)
+        header = next((child for child in visited_children if isinstance(child, kv3.KV3Header)), None)
+        if header is None:
             raise ValueError("kv3 has invalid header")
         try:
-            data = next(data for data in visited_children[1:] if self.is_object(data))
+            data = next(d for d in visited_children if self.is_object(d) and not isinstance(d, kv3.KV3Header))
         except StopIteration:
             raise ValueError("kv3 contains no data")
         else:
