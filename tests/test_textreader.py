@@ -24,11 +24,11 @@ class Test_TextReading(unittest.TestCase):
         # Test with single space
         value = KV3TextReader().parse(" " + default_header + "{}")
         self.assertEqual(value.value, {})
-        
+
         # Test with multiple spaces
         value = KV3TextReader().parse("   " + default_header + "{}")
         self.assertEqual(value.value, {})
-        
+
         # Test with tab
         value = KV3TextReader().parse("\t" + default_header + "{}")
         self.assertEqual(value.value, {})
