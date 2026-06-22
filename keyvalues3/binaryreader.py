@@ -195,7 +195,7 @@ def _read_array_typed_helper(context: KV3ContextNew, count):
         return [buffers.int_buffer.read_uint32() for _ in range(count)]
     else:
         reader = _kv3_readers[data_type]
-        return [reader(context) for _ in range(count)]
+        return [_specifier_to_flagged_value(reader(context), data_specifier) for _ in range(count)]
 
 def _read_array_typed(context: KV3ContextNew):
     count = context.active_buffer.int_buffer.read_uint32()
@@ -275,15 +275,7 @@ _kv3_readers: dict[BinaryType, Callable[[KV3ContextNew], kv3.ValueType] | None] 
     BinaryType.array_typed_byte_length2 : _read_array_typed_byte_size2,
 }
 
-
-def _read_value_legacy(context: KV3ContextNew):
-    value_type, specifier = context.read_type(context)
-    reader = _kv3_readers[value_type]
-    if reader is None:
-        raise NotImplementedError(f"Reader for {value_type!r} not implemented")
-
-    value = reader(context)
-
+def _specifier_to_flagged_value(value: kv3.ValueType, specifier: Specifier):
     if specifier > Specifier.NONE and specifier < Specifier.ENTITY_NAME:
         mapped_flag = {
             Specifier.RESOURCE: kv3.Flag.resource,
@@ -294,9 +286,16 @@ def _read_value_legacy(context: KV3ContextNew):
             
         }[specifier.value]
 
-        value = kv3.flagged_value(value, flags=mapped_flag)
-
+        return kv3.flagged_value(value, flags=mapped_flag)
     return value
+
+def _read_value_legacy(context: KV3ContextNew):
+    value_type, specifier = context.read_type(context)
+    reader = _kv3_readers[value_type]
+    if reader is None:
+        raise NotImplementedError(f"Reader for {value_type!r} not implemented")
+
+    return _specifier_to_flagged_value(reader(context), specifier)
 
 def _read_type_legacy(context: KV3ContextNew):
     data_type = context.types_buffer.read_uint8()
